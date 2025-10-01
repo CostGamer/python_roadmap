@@ -258,6 +258,7 @@
 
 # Extra Python
 `P.S: only for flexing on the job interview`
+
 136) Модуль `itertools`
 137) Модуль `functools`
 138) Регулярные выражения. Модуль `re`
@@ -273,6 +274,7 @@
 
 # Типы данных 4
 `P.S: only for flexing on the job interview`
+
 144) `Decimal` что такое и для чего нужен?
 145) `namedtuple` что такое и для чего нужен?
 146) `defaultdict` что такое и для чего нужен?
