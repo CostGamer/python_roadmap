@@ -746,16 +746,557 @@ _P.S: only for flexing on the job interview_
 ## `26.6` Декораторы `@classmethod` и `@staticmethod` — что такое `cls` и различия  
 ## `26.7` Продвинутое: `@singledispatchmethod` — перегрузка методов по типу аргумента  
 
+----
+
+# `27` (`*`) Магические методы
+Что такое магические методы и зачем нужны?
+## `27.1` `__init__`, `__new__`, `super()`, `__del__`
+## `27.2` `__str__`, `__repr__`
+## `27.3` Сравнение объектов
+- `__eq__`
+- `__ne__`
+- `__lt__`
+- `__gt__`
+- `__le__`
+- `__ge__`
+## `27.4` Вызываемые объекты
+- `__call__`
+## `27.5` Работа с атрибутами
+- `__getattribute__`
+- `__getattr__`
+- `__setattr__`
+- `__delattr__`
+## `27.6` Хэширование
+## `27.7` (`**`) Ultra flex
+1) Унарные операторы
+2) Арифметические операции
+3) Преобразование типов
+
+----
+
+# `28` (`*`) Протоколы
+## `28.1` Итерируемые объекты и итераторы
+## `28.2` Протокол контекстных менеджеров
+## `28.3` Дескрипторы
+## `28.4` (`**`) Ultra flex
+1) Протокол последовательностей
+2) Протокол дескрипторов
+
+----
+
+# `29` (`*`) Наследование и Полиморфизм
+## `29.1` Наследование
+## `29.2` Полиморфизм
+## `29.3` Абстрактные классы и протоколы
+## `29.4` Generics
+## `29.5` Композиция
+
+----
+
+# `30` (`*`) Extra OOP
+## `30.1` `__slots__`, `__dict__`
+## `30.2` Enum
+## `30.3` Миксины
+## `30.4` dataclasses
+
+----
+
+# `31` (`*`) Виртуальное окружение
+## `31.1` Что такое виртуальное окружение и зачем?
+## `31.1` venv
+## `31.1` poetry
+
+----
+
+# `32` (`*`) Многопоточность
+## `32.1` Что такое многопоточность и зачем она нужна
+## `32.2` Потоки vs Процессы — основные различия
+## `32.3` GIL (Global Interpreter Lock) — что это и как влияет на многопоточность в Python
+## `32.4` Модуль threading — основной инструмент для работы с потоками
+## `32.5` Создание и запуск потоков:
+- Класс `Thread`
+- Параметры `target`, `args`, `kwargs`
+- Метод `start()` — запуск потока
+- Метод `join()` — ожидание завершения потока
+## `32.6` Наследование от класса Thread — создание собственных потоков
+## `32.7` Daemon потоки — что это и когда использовать
+## `32.8` Синхронизация потоков:
+`Lock` — блокировка для предотвращения гонки данных
+`RLock` — рекурсивная блокировка
+`Semaphore` — ограничение количества одновременных доступов
+`Event` — сигнализация между потоками
+`Condition` — условная синхронизация
+## `32.9` Проблема гонки данных (race condition) и как её избежать
+## `32.10` Deadlock (взаимная блокировка) — что это и как предотвратить
+## `32.11` Модуль queue для безопасного обмена данными между потоками:
+`Queue` — FIFO очередь
+`LifoQueue` — LIFO очередь (стек)
+`PriorityQueue` — очередь с приоритетами
+## `32.12` threading.local() — thread-local данные
+## `32.13` concurrent.futures.ThreadPoolExecutor — пул потоков для упрощённой работы
+## `32.14` Контекстный менеджер для работы с блокировками
+## `32.15` Когда использовать многопоточность: I/O-bound задачи
+
+----
+
+# `33` (`*`) Асинхронность
+## `33.1` Что такое асинхронность и чем отличается от многопоточности
+## `33.2` Синхронный vs асинхронный код — основные различия
+## `33.3` Event Loop (цикл событий) — что это и как работает
+## `33.4` Ключевые слова `async` и `await` — основы async/await синтаксиса
+## `33.5` Корутины (coroutines) — что это и как их создавать
+## `33.6` Модуль `asyncio` — основной инструмент для асинхронного программирования
+## `33.7` Запуск асинхронного кода:
+- `asyncio.run()` — запуск корутины
+- `asyncio.create_task()` — создание задачи
+- `asyncio.gather()` — параллельное выполнение корутин
+## `33.8` Awaitable объекты — что можно await'ить
+## `33.9` Task (задачи) — управление асинхронными операциями
+## `33.10` `asyncio.sleep()` — асинхронная пауза
+## `33.11` Async context managers — `async with`
+## `33.12` Async iterators и async generators — `async for`
+## `33.13` Работа с асинхронными очередями — `asyncio.Queue`
+## `33.14` Синхронизация в asyncio:
+- `asyncio.Lock`
+- `asyncio.Semaphore`
+- `asyncio.Event`
+- `asyncio.Condition`
+## `33.15` `asyncio.wait()` и `asyncio.wait_for()` — управление временем выполнения
+## `33.16` Обработка исключений в асинхронном коде
+## `33.17` `asyncio.shield()` — защита задач от отмены
+## `33.18` Отмена задач — `task.cancel()` и обработка `CancelledError`
+## `33.19` Работа с subprocess асинхронно — `asyncio.create_subprocess_exec()`
+## `33.20` Интеграция синхронного кода в асинхронный:
+- `asyncio.to_thread()` — выполнение блокирующего кода
+- `loop.run_in_executor()` — использование executor'ов
+## `33.21` `concurrent.futures` и asyncio — совместное использование
+## `33.22` Async библиотеки для HTTP-запросов:
+- `aiohttp` — основы (упоминание без деталей)
+- `httpx` — основы (упоминание без деталей)
+## `33.23` Когда использовать асинхронность: I/O-bound задачи с высоким concurrency
+## `33.24` Продвинутое: создание собственного event loop
+## `33.25` Продвинутое: `asyncio.Future` — низкоуровневая работа с результатами
+
+----
+
+# `33` (`*`) Логирование
+## `33.1` Что такое логирование и зачем оно нужно
+## `33.2` Логирование vs `print()` — основные различия
+## `33.3` Модуль `logging` — стандартный инструмент
+## `33.4` Уровни логирования — `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+## `33.5` Базовое логирование — `logging.basicConfig()` и простые функции
+## `33.6` Logger — создание именованных логгеров через `logging.getLogger()`
+## `33.7` Handler — куда отправляются логи:
+- `StreamHandler` — консоль
+- `FileHandler` — файл
+- `RotatingFileHandler` — ротация файлов
+## `33.8` Formatter — форматирование сообщений и основные переменные
+## `33.9` Настройка уровней логирования для logger и handler
+## `33.10` Логирование исключений — `logger.exception()` и `exc_info=True`
+## `33.11` Конфигурация через словарь — `logging.config.dictConfig()`
+
+----
+
+# `34` (`*`) Паттерны проектирования*
+## `34.1` Что такое паттерны проектирования и зачем они нужны
+`Паттерны проектирования` — это проверенные временем решения типовых проблем, которые возникают при разработке программного обеспечения. Это не готовый код, который можно скопировать, а концептуальные шаблоны для решения конкретных задач.
+
+**Зачем нужны паттерны**:
+- **Переиспользование решений** — не нужно изобретать велосипед для типовых задач
+- **Общий язык** — разработчики понимают друг друга, когда говорят "здесь нужен Singleton" или "давай используем Factory"
+- **Улучшение архитектуры** — код становится более гибким, расширяемым и поддерживаемым
+- **Избежание ошибок** — паттерны учитывают подводные камни, с которыми уже столкнулись другие разработчики
+
+## `34.2` Категории паттернов — порождающие, структурные, поведенческие
+`Паттерны проектирования` делятся на три основные категории по типу решаемых задач:
+
+### **Порождающие паттерны (Creational Patterns)**
+Отвечают за создание объектов. Помогают сделать систему независимой от способа создания, композиции и представления объектов.
+
+**Основные паттерны:**
+- **Singleton** — гарантирует единственный экземпляр класса
+- **Factory Method** — делегирует создание объектов подклассам
+- **Builder** — пошаговое создание сложных объектов
+- **Prototype** — создание объектов через клонирование
+
+**Когда использовать:** когда нужно контролировать процесс создания объектов, скрыть сложную логику инициализации или обеспечить гибкость при создании.
+
+### **Структурные паттерны (Structural Patterns)**
+Описывают способы композиции классов и объектов. Помогают организовать связи между объектами так, чтобы система оставалась гибкой и эффективной.
+
+**Основные паттерны:**
+- **Decorator** — позволяет динамически добавлять объектам новую функциональность, оборачивая их в специальные объекты-обёртки
+- **Adapter** — приводит интерфейс класса к ожидаемому виду
+- **Facade** — предоставляет простой интерфейс к сложной системе
+- **Proxy** — контролирует доступ к объекту
+- **Composite** — организует объекты в древовидную структуру
+
+**Когда использовать:** когда нужно упростить сложные связи между объектами, сделать систему модульной или обеспечить совместимость несовместимых интерфейсов.
+
+### **Поведенческие паттерны (Behavioral Patterns)**
+Определяют взаимодействие между объектами и распределение обязанностей. Помогают организовать эффективную коммуникацию и управление алгоритмами.
+
+**Основные паттерны:**
+- **Strategy** — позволяет менять алгоритмы независимо от клиента
+- **Observer** — механизм подписки на события
+- **Iterator** — последовательный доступ к элементам коллекции
+- **Command** — инкапсулирует запрос как объект
+- **State** — изменяет поведение объекта при изменении состояния
+
+**Когда использовать:** когда нужно гибко управлять поведением объектов, организовать взаимодействие между компонентами или инкапсулировать изменяющееся поведение.
+
+## `34.3` Singleton — единственный экземпляр класса
+`Singleton` гарантирует, что у класса существует только один экземпляр, и предоставляет глобальную точку доступа к нему.
+
+**Зачем нужен:**
+- Управление общими ресурсами — подключение к БД, логгер, конфигурация приложения
+- Координация действий в системе через единую точку доступа
+- Экономия ресурсов — создаём объект только один раз
+
+**Реализация через `__new__`:**
+```python
+class Database:
+    _instance = None
+    
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self, host='localhost'):
+        self.host = host
+
+# Использование
+db1 = Database('localhost')
+db2 = Database('remote')
+print(db1 is db2)  # True — один и тот же объект
+```
+
+Еще можно реализовать через: `декоратор` и `создания единственный экземпляр в коде, а затем его переиспользование (более Питонячий подход)`
+
+**Когда использовать:**
+- Конфигурация приложения
+- Пул соединений к БД
+- Система логирования
+- Кеш или реестр объектов
+
+**Осторожно:**
+- Усложняет тестирование (глобальное состояние)
+- Может нарушать принцип единственной ответственности
+- В многопоточности требует синхронизации
+
+[Больше про Singleton](https://habr.com/ru/companies/otus/articles/779914/)
 
 
+## `34.4` Factory Method — фабричный метод для создания объектов
+`Factory Method` делегирует создание объектов подклассам или отдельным методам, позволяя выбирать тип создаваемого объекта во время выполнения программы.
 
+**Зачем нужен:**
+- Скрывает сложную логику создания объектов
+- Позволяет создавать разные типы объектов через единый интерфейс
+- Упрощает добавление новых типов объектов без изменения существующего кода
 
+**Простой пример — создание транспорта:**
+```python
+from abc import ABC, abstractmethod
 
+class Transport(ABC):
+    @abstractmethod
+    def deliver(self):
+        pass
 
-# Виртуальное окружение
-## venv
-## poetry
-## 
+class Truck(Transport):
+    def deliver(self):
+        return "Доставка по земле на грузовике"
 
+class Ship(Transport):
+    def deliver(self):
+        return "Доставка по морю на корабле"
 
-# Логирование
+# Простой фабричный метод
+class Logistics:
+    @staticmethod
+    def create_transport(transport_type: str) -> Transport:
+        if transport_type == "ground":
+            return Truck()
+        elif transport_type == "sea":
+            return Ship()
+        else:
+            raise ValueError(f"Неизвестный тип транспорта: {transport_type}")
+
+# Использование
+transport = Logistics.create_transport("ground")
+print(transport.deliver())  # Доставка по земле на грузовике
+
+transport = Logistics.create_transport("sea")
+print(transport.deliver())  # Доставка по морю на корабле
+```
+
+**Pythonic подход — функция-фабрика:**
+```python
+def create_payment_processor(payment_type: str):
+    processors = {
+        'credit_card': CreditCardProcessor,
+        'paypal': PayPalProcessor,
+        'crypto': CryptoProcessor
+    }
+    
+    processor_class = processors.get(payment_type)
+    if processor_class is None:
+        raise ValueError(f"Неизвестный тип платежа: {payment_type}")
+    
+    return processor_class()
+
+# Использование
+processor = create_payment_processor('paypal')
+processor.process_payment(100)
+```
+
+**Когда использовать:**
+- Когда заранее неизвестно, объекты каких типов нужно создавать
+- Когда логика создания объектов сложная и её нужно инкапсулировать
+- Когда нужно легко добавлять новые типы объектов
+- Для парсеров, обработчиков файлов разных форматов, драйверов БД
+
+**Преимущества:**
+- Слабая связанность — клиент не зависит от конкретных классов
+- Легко расширяется новыми типами
+- Централизованная логика создания
+
+[Больше про Factory Method](https://habr.com/ru/articles/725340/)
+
+## `34.5` Builder — пошаговое создание сложных объектов
+`Builder` позволяет создавать сложные объекты пошагово, разделяя процесс конструирования и представления. Особенно полезен, когда объект имеет много параметров или сложную структуру.
+
+**Зачем нужен:**
+- Упрощает создание объектов с множеством параметров
+- Делает код читаемым и понятным
+- Позволяет создавать разные представления объекта через один интерфейс
+- Избегает "телескопических конструкторов" с десятками параметров
+
+**Классический пример — построение дома:**
+```python
+class House:
+    def __init__(self):
+        self.walls = None
+        self.roof = None
+        self.windows = None
+        self.doors = None
+        self.garage = None
+    
+    def __str__(self):
+        parts = []
+        if self.walls:
+            parts.append(f"Стены: {self.walls}")
+        if self.roof:
+            parts.append(f"Крыша: {self.roof}")
+        if self.windows:
+            parts.append(f"Окна: {self.windows}")
+        if self.doors:
+            parts.append(f"Двери: {self.doors}")
+        if self.garage:
+            parts.append(f"Гараж: {self.garage}")
+        return "Дом с:\n" + "\n".join(parts)
+
+class HouseBuilder:
+    def __init__(self):
+        self.house = House()
+    
+    def build_walls(self, material):
+        self.house.walls = material
+        return self  # Возвращаем self для цепочки вызовов
+    
+    def build_roof(self, roof_type):
+        self.house.roof = roof_type
+        return self
+    
+    def build_windows(self, count):
+        self.house.windows = count
+        return self
+    
+    def build_doors(self, count):
+        self.house.doors = count
+        return self
+    
+    def build_garage(self, has_garage):
+        self.house.garage = has_garage
+        return self
+    
+    def get_house(self):
+        return self.house
+
+# Использование — метод цепочки (fluent interface)
+builder = HouseBuilder()
+house = (builder
+         .build_walls("кирпич")
+         .build_roof("черепица")
+         .build_windows(4)
+         .build_doors(2)
+         .build_garage(True)
+         .get_house())
+
+print(house)
+# Дом с:
+# Стены: кирпич
+# Крыша: черепица
+# Окна: 4
+# Двери: 2
+# Гараж: True
+```
+
+**Пример с HTTP-запросом:**
+```python
+class HttpRequest:
+    def __init__(self):
+        self.method = "GET"
+        self.url = None
+        self.headers = {}
+        self.body = None
+        self.timeout = 30
+    
+    def __str__(self):
+        return f"{self.method} {self.url}\nHeaders: {self.headers}\nBody: {self.body}"
+
+class RequestBuilder:
+    def __init__(self, url):
+        self.request = HttpRequest()
+        self.request.url = url
+    
+    def method(self, method):
+        self.request.method = method
+        return self
+    
+    def header(self, key, value):
+        self.request.headers[key] = value
+        return self
+    
+    def body(self, data):
+        self.request.body = data
+        return self
+    
+    def timeout(self, seconds):
+        self.request.timeout = seconds
+        return self
+    
+    def build(self):
+        return self.request
+
+# Использование
+request = (RequestBuilder("https://api.example.com/users")
+           .method("POST")
+           .header("Content-Type", "application/json")
+           .header("Authorization", "Bearer token123")
+           .body({"name": "John", "age": 30})
+           .timeout(60)
+           .build())
+
+print(request)
+# POST https://api.example.com/users
+# Headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer token123'}
+# Body: {'name': 'John', 'age': 30}
+```
+
+**Pythonic подход — dataclass с Builder:**
+```python
+from dataclasses import dataclass, field
+from typing import Optional, List
+
+@dataclass
+class Pizza:
+    size: str
+    cheese: bool = False
+    pepperoni: bool = False
+    mushrooms: bool = False
+    olives: bool = False
+    toppings: List[str] = field(default_factory=list)
+    
+    def __str__(self):
+        base = f"Пицца {self.size}"
+        ingredients = []
+        if self.cheese:
+            ingredients.append("сыр")
+        if self.pepperoni:
+            ingredients.append("пепперони")
+        if self.mushrooms:
+            ingredients.append("грибы")
+        if self.olives:
+            ingredients.append("оливки")
+        ingredients.extend(self.toppings)
+        
+        if ingredients:
+            return f"{base} с: {', '.join(ingredients)}"
+        return base
+
+class PizzaBuilder:
+    def __init__(self, size: str):
+        self.size = size
+        self._cheese = False
+        self._pepperoni = False
+        self._mushrooms = False
+        self._olives = False
+        self._toppings = []
+    
+    def add_cheese(self):
+        self._cheese = True
+        return self
+    
+    def add_pepperoni(self):
+        self._pepperoni = True
+        return self
+    
+    def add_mushrooms(self):
+        self._mushrooms = True
+        return self
+    
+    def add_olives(self):
+        self._olives = True
+        return self
+    
+    def add_topping(self, topping: str):
+        self._toppings.append(topping)
+        return self
+    
+    def build(self) -> Pizza:
+        return Pizza(
+            size=self.size,
+            cheese=self._cheese,
+            pepperoni=self._pepperoni,
+            mushrooms=self._mushrooms,
+            olives=self._olives,
+            toppings=self._toppings
+        )
+
+# Использование
+pizza = (PizzaBuilder("большая")
+         .add_cheese()
+         .add_pepperoni()
+         .add_mushrooms()
+         .add_topping("бекон")
+         .build())
+
+print(pizza)  # Пицца большая с: сыр, пепперони, грибы, бекон
+```
+
+**Когда использовать:**
+- Объект имеет много необязательных параметров
+- Создание объекта требует множества шагов
+- Нужно создавать разные представления одного объекта
+- Хочется избежать конструктора с десятками параметров
+
+**Преимущества:**
+- Читаемый и понятный код
+- Пошаговое конструирование
+- Возможность повторного использования builder'а
+- Изоляция сложной логики создания
+
+[Еще реализация Builder](https://ru.hexlet.io/courses/python-object-oriented-design/lessons/builder/theory_unit)
+
+## `34.6` Strategy — инкапсуляция алгоритмов
+## `34.7` Observer — подписка на события и уведомления
+## `34.8` Iterator — последовательный доступ к элементам (протокол итератора)
+## `34.9` Context Manager — паттерн `with` и протокол `__enter__`/`__exit__`
+## `34.10` Async Context Manager — `async with` и `__aenter__`/`__aexit__`
+## `34.11` Async Decorator — декораторы для асинхронных функций
+## `34.12` Dependency Injection — внедрение зависимостей
+
+----
