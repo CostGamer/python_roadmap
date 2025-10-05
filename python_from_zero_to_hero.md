@@ -3494,16 +3494,619 @@ print(indexed_dict)  # {0: 'apple', 1: 'banana', 2: 'cherry'}
 ### `12.0.1` Потоковый ввод и вывод данных  
 
 ## `12.1` TXT
-### `12.1.1` (`*`) Что такое контекстный менеджер?  
-### `12.1.2` Как читать и записывать в файл?  
-### `12.1.3` Какие есть функции и методы для работы с TXT в Python?  
+[Базовая работа с файлами](https://www.youtube.com/watch?v=t-xQAhLNYSs)
+
+### `12.1.1` (`*`) Что такое контекстный менеджер?
+[Контекстный менеджер](https://www.youtube.com/watch?v=ycVlsU_c4Mg)
+
+`Контекстный менеджер` — это механизм в Python, который автоматически выполняет определённые действия до и после блока кода. Используется с ключевым словом `with` и гарантирует, что ресурсы будут корректно освобождены даже при возникновении ошибок.
+
+**Зачем нужен:**
+- Автоматически закрывает файлы
+- Освобождает ресурсы (соединения, блокировки)
+- Выполняет cleanup-код даже при ошибках
+- Делает код короче и безопаснее
+
+**Без контекстного менеджера (плохо):**
+
+```python
+# Открываем файл вручную
+file = open('data.txt', 'r')
+
+try:
+    content = file.read()
+    print(content)
+finally:
+    file.close()  # ОБЯЗАТЕЛЬНО нужно закрыть!
+    # Если забыть — утечка ресурсов
+
+# Проблемы:
+# 1. Легко забыть закрыть файл
+# 2. Много кода для простой операции
+# 3. Нужно помнить про try-finally
+```
+
+**С контекстным менеджером (хорошо):**
+
+```python
+# Контекстный менеджер автоматически закроет файл
+with open('data.txt', 'r') as file:
+    content = file.read()
+    print(content)
+# Файл автоматически закрыт здесь, даже если была ошибка!
+
+# Преимущества:
+# 1. Короче и понятнее
+# 2. Файл всегда закроется
+# 3. Работает даже при ошибках
+```
+
+**Как это работает:**
+
+```python
+# 1. При входе в блок with — открывается файл
+# 2. Выполняется код внутри блока
+# 3. При выходе из блока — файл закрывается автоматически
+
+with open('data.txt', 'r') as file:  # ← Открытие (вход)
+    content = file.read()             # ← Работа с файлом
+    print(content)
+# ← Автоматическое закрытие (выход)
+
+# Даже если произошла ошибка
+with open('data.txt', 'r') as file:
+    content = file.read()
+    raise ValueError("Ошибка!")  # Ошибка!
+    # Файл всё равно будет закрыт
+```
+
+**Практические примеры:**
+
+**Работа с файлами:**
+
+```python
+# Чтение файла
+with open('input.txt', 'r', encoding='utf-8') as f:
+    data = f.read()
+    print(data)
+# Файл закрыт
+
+# Запись в файл
+with open('output.txt', 'w', encoding='utf-8') as f:
+    f.write("Hello, World!")
+# Файл закрыт и сохранён
+
+# Работа с несколькими файлами
+with open('input.txt', 'r') as f_in, open('output.txt', 'w') as f_out:
+    content = f_in.read()
+    f_out.write(content.upper())
+# Оба файла закрыты
+```
+
+**Сравнение с ручным управлением:**
+
+```python
+# БЕЗ контекстного менеджера — опасно!
+f = open('data.txt', 'w')
+f.write("some data")
+# Если программа упадёт здесь, файл не закроется!
+# Данные могут не сохраниться!
+f.close()
+
+# С контекстным менеджером — безопасно
+with open('data.txt', 'w') as f:
+    f.write("some data")
+    # Даже если ошибка здесь, файл сохранится и закроется
+# Файл гарантированно закрыт и сохранён
+```
+
+**Что происходит за кулисами:**
+
+```python
+# Когда мы пишем:
+with open('file.txt', 'r') as f:
+    content = f.read()
+
+# Python делает примерно это:
+f = open('file.txt', 'r')
+try:
+    content = f.read()
+finally:
+    f.close()  # Всегда выполнится
+
+# Но контекстный менеджер делает это автоматически!
+```
+
+**Создание простого контекстного менеджера:**
+
+```python
+from contextlib import contextmanager
+
+@contextmanager
+def timer():
+    """Измеряет время выполнения кода"""
+    import time
+    start = time.time()
+    print("Таймер запущен")
+    
+    try:
+        yield  # Здесь выполняется код внутри with
+    finally:
+        elapsed = time.time() - start
+        print(f"Время выполнения: {elapsed:.2f} сек")
+
+# Использование
+with timer():
+    # Код, время выполнения которого измеряем
+    total = sum(range(1000000))
+    print(f"Сумма: {total}")
+
+# Вывод:
+# Таймер запущен
+# Сумма: 499999500000
+# Время выполнения: 0.05 сек
+```
+
+**Другие примеры контекстных менеджеров:**
+
+```python
+# Временное изменение директории
+import os
+from contextlib import contextmanager
+
+@contextmanager
+def change_dir(path):
+    """Временно меняет директорию"""
+    original = os.getcwd()
+    os.chdir(path)
+    print(f"Перешли в {path}")
+    
+    try:
+        yield
+    finally:
+        os.chdir(original)
+        print(f"Вернулись в {original}")
+
+# Использование
+print(f"Начальная директория: {os.getcwd()}")
+with change_dir('/tmp'):
+    print(f"Внутри with: {os.getcwd()}")
+print(f"После with: {os.getcwd()}")
+
+# Вывод:
+# Начальная директория: /home/user
+# Перешли в /tmp
+# Внутри with: /tmp
+# Вернулись в /home/user
+# После with: /home/user
+```
+
+**Ключевые моменты:**
+- **`with`** — ключевое слово для использования контекстного менеджера
+- **Автоматическое освобождение ресурсов** — не нужно вручную закрывать файлы
+- **Безопасность** — ресурсы освобождаются даже при ошибках
+- **Читаемость** — код короче и понятнее
+- **Основное применение** — работа с файлами, но можно использовать для любых ресурсов
+
+**Когда использовать:**
+- Работа с файлами (всегда!)
+- Работа с БД соединениями
+- Блокировки в многопоточности
+- Временные изменения состояния
+- Любые ресурсы, требующие cleanup
+
+### `12.1.2` Какие есть функции и методы для работы с TXT в Python?  
 
 ## `12.2` (`*`) JSON
-### `12.2.1` Что такое JSON? Для чего он нужен?  
-### `12.2.2` Какие есть функции и методы для работы с JSON в Python?  
-### `12.2.3` Как происходит конвертация типов данных при сериализации?  
+[Видео про JSON](https://www.youtube.com/watch?v=-51jxlQaxyA)
+
+### `12.2.1` Что такое JSON? Для чего он нужен?
+`JSON (JavaScript Object Notation)` — это текстовый формат для хранения и передачи структурированных данных. Он легко читается человеком и компьютером, поэтому широко используется для обмена данными между приложениями.
+
+**Основные характеристики:**
+- Текстовый формат (строка)
+- Язык-независимый (работает везде)
+- Простая и понятная структура
+- Поддерживает вложенность
+
+**Пример JSON:**
+
+```json
+{
+  "name": "Alice",
+  "age": 25,
+  "city": "Moscow",
+  "skills": ["Python", "JavaScript", "SQL"],
+  "active": true,
+  "address": {
+    "street": "Main St",
+    "building": 10
+  }
+}
+```
+
+**Для чего нужен JSON:**
+- **API и веб-сервисы** — обмен данными между клиентом и сервером
+- **Конфигурационные файлы** — хранение настроек приложений
+- **Хранение данных** — сохранение структурированной информации
+- **Логирование** — структурированные логи
+- **Передача данных** — между разными языками программирования
+
+**Где используется:**
+```python
+# REST API
+# GET /api/users/123
+# Response: {"id": 123, "name": "Alice", "email": "alice@mail.com"}
+
+# Конфигурация
+# config.json: {"debug": true, "port": 8080, "database": "localhost"}
+
+# Сохранение данных
+# data.json: [{"product": "Laptop", "price": 1000}, {"product": "Mouse", "price": 20}]
+```
+
+### `12.2.2` Какие есть функции и методы для работы с JSON в Python?
+Python имеет встроенный модуль `json` для работы с JSON-данными.
+
+**Основные функции:**
+**`json.dumps()` — сериализация Python → JSON (строка)**
+
+```python
+import json
+
+# Python объект → JSON строка
+data = {
+    "name": "Alice",
+    "age": 25,
+    "skills": ["Python", "SQL"]
+}
+
+json_string = json.dumps(data)
+print(json_string)  # {"name": "Alice", "age": 25, "skills": ["Python", "SQL"]}
+print(type(json_string))  # <class 'str'>
+
+# С форматированием (pretty print)
+json_formatted = json.dumps(data, indent=4)
+print(json_formatted)
+# {
+#     "name": "Alice",
+#     "age": 25,
+#     "skills": [
+#         "Python",
+#         "SQL"
+#     ]
+# }
+
+# Сортировка ключей
+json_sorted = json.dumps(data, indent=2, sort_keys=True)
+print(json_sorted)
+# {
+#   "age": 25,
+#   "name": "Alice",
+#   "skills": [
+#     "Python",
+#     "SQL"
+#   ]
+# }
+```
+
+**`json.loads()` — десериализация JSON (строка) → Python**
+
+```python
+import json
+
+# JSON строка → Python объект
+json_string = '{"name": "Bob", "age": 30, "active": true}'
+data = json.loads(json_string)
+
+print(data)  # {'name': 'Bob', 'age': 30, 'active': True}
+print(type(data))  # <class 'dict'>
+print(data["name"])  # Bob
+
+# С вложенными структурами
+json_complex = '''
+{
+    "user": "Alice",
+    "scores": [85, 90, 95],
+    "settings": {
+        "theme": "dark",
+        "notifications": true
+    }
+}
+'''
+parsed = json.loads(json_complex)
+print(parsed["scores"])  # [85, 90, 95]
+print(parsed["settings"]["theme"])  # dark
+```
+
+**`json.dump()` — запись в файл**
+
+```python
+import json
+
+# Запись Python объекта в JSON файл
+data = {
+    "products": [
+        {"name": "Laptop", "price": 1000},
+        {"name": "Mouse", "price": 20}
+    ]
+}
+
+# Сохранение в файл
+with open('data.json', 'w', encoding='utf-8') as file:
+    json.dump(data, file, indent=4, ensure_ascii=False)
+
+# Файл data.json:
+# {
+#     "products": [
+#         {
+#             "name": "Laptop",
+#             "price": 1000
+#         },
+#         {
+#             "name": "Mouse",
+#             "price": 20
+#         }
+#     ]
+# }
+```
+
+**`json.load()` — чтение из файла**
+
+```python
+import json
+
+# Чтение JSON из файла
+with open('data.json', 'r', encoding='utf-8') as file:
+    data = json.load(file)
+
+print(data)  # {'products': [{'name': 'Laptop', 'price': 1000}, ...]}
+print(data["products"][0]["name"])  # Laptop
+```
+
+**Параметры функций:**
+
+```python
+import json
+
+data = {"name": "Анна", "city": "Москва"}
+
+# indent — отступы для читаемости
+json.dumps(data, indent=2)
+
+# sort_keys — сортировка ключей
+json.dumps(data, sort_keys=True)
+
+# ensure_ascii — кириллица и спецсимволы
+json.dumps(data, ensure_ascii=False)  # {"name": "Анна", ...}
+json.dumps(data, ensure_ascii=True)   # {"name": "\u0410\u043d\u043d\u0430", ...}
+
+# separators — разделители
+json.dumps(data, separators=(',', ':'))  # Компактный вывод без пробелов
+# {"name":"Анна","city":"Москва"}
+```
+
+**Обработка ошибок:**
+
+```python
+import json
+
+# Невалидный JSON
+invalid_json = '{"name": "Alice", "age": 25'  # Отсутствует }
+
+try:
+    data = json.loads(invalid_json)
+except json.JSONDecodeError as e:
+    print(f"Ошибка парсинга JSON: {e}")
+    # Ошибка парсинга JSON: Expecting ',' delimiter: line 1 column 29 (char 28)
+
+# Проверка валидности JSON
+def is_valid_json(json_string):
+    try:
+        json.loads(json_string)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+print(is_valid_json('{"name": "Alice"}'))  # True
+print(is_valid_json('{"name": Alice}'))    # False (нет кавычек)
+```
+
+### `12.2.3` Как происходит конвертация типов данных при сериализации?
+При преобразовании Python ↔ JSON типы данных автоматически конвертируются.
+
+**Таблица соответствия типов:**
+
+| Python | JSON | Обратно в Python |
+|--------|------|------------------|
+| `dict` | `object` | `dict` |
+| `list`, `tuple` | `array` | `list` |
+| `str` | `string` | `str` |
+| `int`, `float` | `number` | `int`, `float` |
+| `True` | `true` | `True` |
+| `False` | `false` | `False` |
+| `None` | `null` | `None` |
+
+**Примеры конвертации:**
+
+```python
+import json
+
+# Python → JSON
+data = {
+    "name": "Alice",           # str → string
+    "age": 25,                 # int → number
+    "height": 1.65,            # float → number
+    "active": True,            # bool → true/false
+    "address": None,           # None → null
+    "skills": ["Python", "SQL"], # list → array
+    "scores": (85, 90, 95),    # tuple → array
+    "metadata": {"key": "value"} # dict → object
+}
+
+json_str = json.dumps(data, indent=2)
+print(json_str)
+# {
+#   "name": "Alice",
+#   "age": 25,
+#   "height": 1.65,
+#   "active": true,
+#   "address": null,
+#   "skills": ["Python", "SQL"],
+#   "scores": [85, 90, 95],
+#   "metadata": {"key": "value"}
+# }
+
+# JSON → Python
+parsed = json.loads(json_str)
+print(type(parsed["skills"]))   # <class 'list'> (был list)
+print(type(parsed["scores"]))   # <class 'list'> (был tuple, стал list!)
+print(parsed["address"])        # None (был null)
+print(parsed["active"])         # True (был true)
+```
+
+**Важные моменты конвертации:**
+**1. Кортежи становятся списками**
+
+```python
+import json
+
+data = {"numbers": (1, 2, 3)}  # tuple
+json_str = json.dumps(data)
+parsed = json.loads(json_str)
+
+print(type(parsed["numbers"]))  # <class 'list'> (потерялся тип tuple!)
+print(parsed["numbers"])        # [1, 2, 3]
+```
+
+ **2. Множества не поддерживаются**
+
+```python
+import json
+
+data = {"tags": {"python", "coding"}}  # set
+
+try:
+    json.dumps(data)
+except TypeError as e:
+    print(f"Ошибка: {e}")
+    # Ошибка: Object of type set is not JSON serializable
+
+# Решение: конвертировать в list
+data_fixed = {"tags": list(data["tags"])}
+print(json.dumps(data_fixed))  # {"tags": ["python", "coding"]}
+```
+
+**3. Пользовательские объекты не поддерживаются**
+
+```python
+import json
+
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+user = User("Alice", 25)
+
+try:
+    json.dumps(user)
+except TypeError as e:
+    print(f"Ошибка: {e}")
+    # Ошибка: Object of type User is not JSON serializable
+
+# Решение 1: конвертировать в словарь вручную
+user_dict = {"name": user.name, "age": user.age}
+print(json.dumps(user_dict))  # {"name": "Alice", "age": 25}
+
+# Решение 2: использовать __dict__
+print(json.dumps(user.__dict__))  # {"name": "Alice", "age": 25}
+
+# Решение 3: кастомный encoder
+class UserEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, User):
+            return {"name": obj.name, "age": obj.age}
+        return super().default(obj)
+
+print(json.dumps(user, cls=UserEncoder))  # {"name": "Alice", "age": 25}
+```
+
+**4. Специальные числа**
+
+```python
+import json
+
+# Infinity и NaN не поддерживаются по умолчанию
+data = {"value": float('inf')}
+
+try:
+    json.dumps(data)
+except ValueError as e:
+    print(f"Ошибка: {e}")
+    # Ошибка: Out of range float values are not JSON compliant
+
+# Разрешить специальные значения
+json_str = json.dumps(data, allow_nan=True)
+print(json_str)  # {"value": Infinity}
+```
+
+**Практические примеры:**
+
+```python
+import json
+
+# Работа с API
+response_data = {
+    "status": "success",
+    "users": [
+        {"id": 1, "name": "Alice", "active": True},
+        {"id": 2, "name": "Bob", "active": False}
+    ],
+    "total": 2
+}
+
+# Отправка данных
+json_response = json.dumps(response_data)
+print(json_response)
+
+# Получение данных
+parsed_response = json.loads(json_response)
+for user in parsed_response["users"]:
+    if user["active"]:
+        print(f"Активный пользователь: {user['name']}")
+
+# Сохранение конфигурации
+config = {
+    "debug": True,
+    "port": 8080,
+    "database": {
+        "host": "localhost",
+        "name": "mydb"
+    }
+}
+
+with open('config.json', 'w') as f:
+    json.dump(config, f, indent=4)
+
+# Чтение конфигурации
+with open('config.json', 'r') as f:
+    loaded_config = json.load(f)
+    print(f"Порт: {loaded_config['port']}")
+    print(f"БД: {loaded_config['database']['host']}")
+```
+
+**Ключевые моменты:**
+- `json.dumps()` / `json.loads()` — работа со строками
+- `json.dump()` / `json.load()` — работа с файлами
+- JSON поддерживает: dict, list, str, int, float, bool, None
+- JSON НЕ поддерживает: set, tuple (конвертируется в list), пользовательские объекты
+- Используйте `indent` для читаемости, `ensure_ascii=False` для кириллицы
+
 
 ## `12.3` CSV
+[Видео про CSV](https://www.youtube.com/watch?v=q5uM4VKywbA)
+
 ### `12.3.1` Что такое CSV? Для чего он нужен?  
 ### `12.3.2` Какие есть функции и методы для работы с CSV в Python?  
 
@@ -3519,7 +4122,7 @@ print(indexed_dict)  # {0: 'apple', 1: 'banana', 2: 'cherry'}
 
 ----
 
-# `14` Обработка исключений
+# `14` (`*`) Обработка исключений
 ## `14.1` Типы ошибок. Основные исключения в Python и их иерархия  
 ## `14.2` `try-except`  
 ## `14.3` `else` & `finally` в `try-except`  
@@ -3812,24 +4415,1625 @@ _P.S: only for flexing on the job interview_
 ----
 
 # `32` (`*`) Многопоточность
+[Must have video](https://youtu.be/JIp14T9bvvc?si=uHOZNBIKbo7ZTk68)
+
 ## `32.1` Что такое многопоточность и зачем она нужна
+**Многопоточность (multithreading)** — это способность программы выполнять несколько задач одновременно в рамках одного процесса. Каждая задача выполняется в отдельном **потоке (thread)** — это независимая последовательность инструкций внутри программы.
+
+### **Простая аналогия:**
+
+Представьте ресторан:
+- **Без многопоточности:** один официант обслуживает столики по очереди. Пока он принимает заказ у первого стола, второй и третий ждут.
+- **С многопоточностью:** несколько официантов работают одновременно. Один принимает заказ, другой приносит еду, третий убирает посуду — всё происходит параллельно.
+
+### **Как работает обычная программа (однопоточная):**
+
+```python
+import time
+
+def download_file(file_name):
+    print(f"Начинаю загрузку {file_name}")
+    time.sleep(2)  # Имитация загрузки файла (2 секунды)
+    print(f"Загрузка {file_name} завершена")
+
+# Загружаем файлы по очереди
+start = time.time()
+
+download_file("файл1.txt")
+download_file("файл2.txt")
+download_file("файл3.txt")
+
+end = time.time()
+print(f"Общее время: {end - start:.2f} секунд")
+
+# Вывод:
+# Начинаю загрузку файл1.txt
+# Загрузка файл1.txt завершена
+# Начинаю загрузку файл2.txt
+# Загрузка файл2.txt завершена
+# Начинаю загрузку файл3.txt
+# Загрузка файл3.txt завершена
+# Общее время: 6.00 секунд (2+2+2)
+```
+
+**Проблема:** каждый файл загружается по очереди. Пока первый файл загружается, программа простаивает и ждёт. Общее время = 6 секунд.
+
+### **С многопоточностью:**
+
+```python
+import time
+import threading
+
+def download_file(file_name):
+    print(f"Начинаю загрузку {file_name}")
+    time.sleep(2)  # Имитация загрузки
+    print(f"Загрузка {file_name} завершена")
+
+# Создаём потоки для загрузки файлов одновременно
+start = time.time()
+
+thread1 = threading.Thread(target=download_file, args=("файл1.txt",))
+thread2 = threading.Thread(target=download_file, args=("файл2.txt",))
+thread3 = threading.Thread(target=download_file, args=("файл3.txt",))
+
+# Запускаем все потоки
+thread1.start()
+thread2.start()
+thread3.start()
+
+# Ждём завершения всех потоков
+thread1.join()
+thread2.join()
+thread3.join()
+
+end = time.time()
+print(f"Общее время: {end - start:.2f} секунд")
+
+# Вывод:
+# Начинаю загрузку файл1.txt
+# Начинаю загрузку файл2.txt
+# Начинаю загрузку файл3.txt
+# Загрузка файл1.txt завершена
+# Загрузка файл2.txt завершена
+# Загрузка файл3.txt завершена
+# Общее время: 2.00 секунд (все одновременно!)
+```
+
+**Результат:** все три файла загружаются параллельно. Общее время = 2 секунды вместо 6!
+
+### **Зачем нужна многопоточность:**
+
+#### **1. Ускорение I/O операций (ввод-вывод)**
+
+Когда программа ждёт внешние операции (чтение файлов, сетевые запросы, работа с БД), процессор простаивает. Потоки позволяют делать другую работу во время ожидания.
+
+```python
+import time
+import threading
+
+def check_website(url):
+    print(f"Проверяю {url}")
+    time.sleep(1)  # Имитация HTTP-запроса
+    print(f"{url} доступен")
+
+websites = ["site1.com", "site2.com", "site3.com", "site4.com"]
+
+# Без многопоточности — 4 секунды
+start = time.time()
+for site in websites:
+    check_website(site)
+print(f"Время без потоков: {time.time() - start:.2f} сек")  # ~4 секунды
+
+# С многопоточностью — 1 секунда
+start = time.time()
+threads = []
+for site in websites:
+    thread = threading.Thread(target=check_website, args=(site,))
+    threads.append(thread)
+    thread.start()
+
+for thread in threads:
+    thread.join()
+
+print(f"Время с потоками: {time.time() - start:.2f} сек")  # ~1 секунда
+```
+
+#### **2. Отзывчивость интерфейса**
+
+В GUI-приложениях длительные операции выполняются в отдельном потоке, чтобы интерфейс не зависал.
+
+```python
+import threading
+import time
+
+def long_operation():
+    """Долгая операция (обработка данных, загрузка файла)"""
+    print("Начинаю долгую операцию...")
+    time.sleep(5)
+    print("Операция завершена!")
+
+# Без потоков — интерфейс зависнет на 5 секунд
+# long_operation()  # Программа заморожена!
+
+# С потоками — интерфейс работает
+thread = threading.Thread(target=long_operation)
+thread.start()
+
+# Основной поток может продолжать работу
+print("Интерфейс продолжает работать")
+print("Пользователь может нажимать кнопки")
+# ... интерфейс отзывчив
+
+thread.join()  # Дожидаемся завершения в конце
+```
+
+#### **3. Параллельная обработка независимых задач**
+
+```python
+import threading
+import time
+
+def process_data(data_chunk, result_list, index):
+    """Обработка части данных"""
+    print(f"Обрабатываю часть {index}")
+    time.sleep(1)  # Имитация обработки
+    result = sum(data_chunk)  # Простая обработка
+    result_list[index] = result
+    print(f"Часть {index} обработана, результат: {result}")
+
+# Большой массив данных
+data = list(range(100))
+
+# Делим на 4 части
+chunk_size = 25
+chunks = [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
+
+# Обрабатываем каждую часть в отдельном потоке
+results = [0] * 4
+threads = []
+
+start = time.time()
+
+for i, chunk in enumerate(chunks):
+    thread = threading.Thread(target=process_data, args=(chunk, results, i))
+    threads.append(thread)
+    thread.start()
+
+for thread in threads:
+    thread.join()
+
+total = sum(results)
+print(f"Итоговый результат: {total}")
+print(f"Время: {time.time() - start:.2f} сек")
+
+# Вывод:
+# Обрабатываю часть 0
+# Обрабатываю часть 1
+# Обрабатываю часть 2
+# Обрабатываю часть 3
+# Часть 0 обработана, результат: 300
+# Часть 1 обработана, результат: 925
+# Часть 2 обработана, результат: 1550
+# Часть 3 обработана, результат: 2175
+# Итоговый результат: 4950
+# Время: ~1 секунда (вместо 4)
+```
+
+### **Когда многопоточность полезна:**
+
+✅ **Подходит для:**
+- Загрузка файлов из интернета
+- Работа с несколькими API одновременно
+- Чтение/запись множества файлов
+- Работа с базами данных (много запросов)
+- GUI приложения (фоновые задачи)
+- Сетевые серверы (обработка клиентов)
+
+❌ **НЕ подходит для:**
+- Тяжёлые вычисления (математика, обработка изображений)
+- CPU-интенсивные задачи (для них нужна многопроцессность)
+
+### **Ключевые моменты:**
+
+- **Поток** — независимая последовательность выполнения кода
+- **Многопоточность** — несколько потоков работ
+
 ## `32.2` Потоки vs Процессы — основные различия
+**Потоки (Threads)** и **процессы (Processes)** — два способа параллельного выполнения задач, но они работают по-разному.
+
+### **Основные различия:**
+
+| Характеристика | Потоки (Threads) | Процессы (Processes) |
+|----------------|------------------|---------------------|
+| **Память** | Общая (делят память программы) | Изолированная (своя копия памяти) |
+| **Создание** | Быстрое и лёгкое | Медленное, требует больше ресурсов |
+| **Коммуникация** | Простая (общие переменные) | Сложная (нужны специальные механизмы) |
+| **Изоляция** | Низкая (ошибка в одном влияет на все) | Высокая (независимы друг от друга) |
+| **Использование** | I/O операции (файлы, сеть, БД) | CPU-интенсивные вычисления |
+
+### **Визуальная аналогия:**
+
+**Потоки** — это как несколько поваров на одной кухне:
+- Делят одно пространство (общая память)
+- Быстро передают друг другу продукты
+- Могут мешать друг другу
+- Если один сломает плиту, пострадают все
+
+**Процессы** — это как несколько отдельных кухонь:
+- У каждого своя кухня (своя память)
+- Медленнее передавать продукты между кухнями
+- Не мешают друг другу
+- Если сломается одна кухня, другие работают
+
+### **Пример с потоками:**
+
+```python
+import threading
+
+# Общая переменная (все потоки видят её)
+counter = 0
+
+def increment():
+    global counter
+    for _ in range(100000):
+        counter += 1
+
+# Два потока работают с общей переменной
+thread1 = threading.Thread(target=increment)
+thread2 = threading.Thread(target=increment)
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+print(f"Counter: {counter}")  # Может быть не 200000! (race condition)
+```
+
+### **Когда использовать что:**
+
+**Используйте потоки для:**
+- Загрузка файлов из интернета
+- Множественные запросы к API
+- Работа с базой данных
+- Чтение/запись файлов
+- Сетевые операции
+
+**Используйте процессы для:**
+- Тяжёлые математические вычисления
+- Обработка изображений/видео
+- Машинное обучение
+- Любые CPU-интенсивные задачи
+
 ## `32.3` GIL (Global Interpreter Lock) — что это и как влияет на многопоточность в Python
+**GIL (Global Interpreter Lock)** — это механизм в CPython (стандартная реализация Python), который позволяет выполняться только одному потоку Python-кода одновременно, даже на многоядерном процессоре.
+
+### **Простыми словами:**
+
+Представьте, что у вас 4 повара (потока) и 4 плиты (ядра процессора), но есть только один ключ от кухни (GIL). Только один повар может готовить в данный момент, остальные ждут своей очереди с ключом.
+
+### **Как это влияет:**
+
+**Для I/O операций (файлы, сеть, БД):**
+- ✅ GIL **не мешает** — потоки эффективны
+- Во время ожидания (чтение файла, HTTP-запрос) GIL отпускается
+- Другие потоки могут работать
+
+**Для CPU-интенсивных вычислений:**
+- ❌ GIL **блокирует** — потоки неэффективны
+- Только один поток вычисляет в момент времени
+- Многопоточность может быть даже медленнее
+
+### **Пример влияния GIL:**
+
+```python
+import threading
+import time
+
+# CPU-интенсивная задача (вычисления)
+def calculate():
+    result = 0
+    for i in range(10_000_000):
+        result += i
+    return result
+
+# I/O задача (ожидание)
+def wait():
+    time.sleep(2)
+    return "done"
+
+# CPU задача — GIL мешает
+start = time.time()
+thread1 = threading.Thread(target=calculate)
+thread2 = threading.Thread(target=calculate)
+thread1.start()
+thread2.start()
+thread1.join()
+thread2.join()
+print(f"CPU с потоками: {time.time() - start:.2f} сек")  # ~1.5 сек
+
+# Без потоков
+start = time.time()
+calculate()
+calculate()
+print(f"CPU без потоков: {time.time() - start:.2f} сек")  # ~1.5 сек
+# Почти одинаково! GIL не даёт ускорения
+
+# I/O задача — GIL не мешает
+start = time.time()
+thread1 = threading.Thread(target=wait)
+thread2 = threading.Thread(target=wait)
+thread1.start()
+thread2.start()
+thread1.join()
+thread2.join()
+print(f"I/O с потоками: {time.time() - start:.2f} сек")  # ~2 сек
+
+# Без потоков
+start = time.time()
+wait()
+wait()
+print(f"I/O без потоков: {time.time() - start:.2f} сек")  # ~4 сек
+# В 2 раза быстрее с потоками!
+```
+
+### **Решения проблемы GIL:**
+
+1. **Для CPU задач:** используйте `multiprocessing` (процессы вместо потоков)
+2. **Для I/O задач:** используйте `threading` или `asyncio`
+3. **Альтернативные реализации Python:** Jython, IronPython (без GIL)
+
+### **Ключевые моменты:**
+
+- **GIL** — ограничение CPython, не самого языка Python
+- **Не влияет на I/O операции** — потоки эффективны для файлов, сети, БД
+- **Блокирует CPU вычисления** — для них используйте процессы
+- **Упрощает разработку** — защищает от некоторых проблем многопоточности
+- **Не проблема в большинстве случаев** — Python часто используется для I/O задач
+
 ## `32.4` Модуль threading — основной инструмент для работы с потоками
+`threading` — это встроенный модуль Python для создания и управления потоками. Он предоставляет высокоуровневый интерфейс для многопоточного программирования.
+
+### **Базовый импорт и проверка:**
+
+```python
+import threading
+
+# Узнать количество активных потоков
+print(f"Активных потоков: {threading.active_count()}")  # 1 (главный поток)
+
+# Получить текущий поток
+current = threading.current_thread()
+print(f"Текущий поток: {current.name}")  # MainThread
+
+# Список всех активных потоков
+print(f"Все потоки: {threading.enumerate()}")  # [<_MainThread(MainThread, started ...)>]
+```
+
+### **Основные компоненты модуля:**
+
+```python
+import threading
+
+# Thread — класс для создания потоков
+# Lock — блокировка для синхронизации
+# Event — событие для сигнализации между потоками
+# Semaphore — семафор для ограничения доступа
+# Queue — очередь для безопасного обмена данными
+
+# Пример простого потока
+def worker():
+    print(f"Поток {threading.current_thread().name} работает")
+
+thread = threading.Thread(target=worker, name="Worker-1")
+thread.start()
+thread.join()
+
+# Вывод:
+# Поток Worker-1 работает
+```
+
+### **Информация о потоке:**
+
+```python
+import threading
+import time
+
+def task():
+    print(f"Имя потока: {threading.current_thread().name}")
+    print(f"ID потока: {threading.get_ident()}")
+    time.sleep(1)
+
+# Создание именованного потока
+thread = threading.Thread(target=task, name="MyWorker")
+print(f"Поток создан: {thread.name}")
+print(f"Поток живой: {thread.is_alive()}")  # False (ещё не запущен)
+
+thread.start()
+print(f"Поток живой: {thread.is_alive()}")  # True (запущен)
+
+thread.join()
+print(f"Поток живой: {thread.is_alive()}")  # False (завершён)
+
+# Вывод:
+# Поток создан: MyWorker
+# Поток живой: False
+# Поток живой: True
+# Имя потока: MyWorker
+# ID потока: 123145472000000 (пример)
+# Поток живой: False
+```
+
 ## `32.5` Создание и запуск потоков:
-- Класс `Thread`
-- Параметры `target`, `args`, `kwargs`
-- Метод `start()` — запуск потока
-- Метод `join()` — ожидание завершения потока
+### **Класс `Thread` — создание потока**
+
+`Thread` — основной класс для создания потоков. Ему передаётся функция, которую нужно выполнить в отдельном потоке.
+
+```python
+import threading
+import time
+
+def print_numbers():
+    for i in range(5):
+        print(f"Число: {i}")
+        time.sleep(0.5)
+
+# Создаём поток
+thread = threading.Thread(target=print_numbers)
+
+# target — функция, которая будет выполнена в потоке
+# Поток создан, но ещё не запущен!
+```
+
+### **Параметр `target` — функция для выполнения**
+
+`target` — это функция, которую поток будет выполнять.
+
+```python
+import threading
+
+def greet():
+    print("Привет из потока!")
+
+def calculate():
+    result = sum(range(1000000))
+    print(f"Результат: {result}")
+
+# Разные функции — разные потоки
+thread1 = threading.Thread(target=greet)
+thread2 = threading.Thread(target=calculate)
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+# Вывод:
+# Привет из потока!
+# Результат: 499999500000
+```
+
+### **Параметры `args` и `kwargs` — передача аргументов**
+
+`args` — позиционные аргументы (кортеж)  
+`kwargs` — именованные аргументы (словарь)
+
+```python
+import threading
+import time
+
+# Функция с параметрами
+def download_file(filename, size, delay=1):
+    print(f"Загружаю {filename} ({size} MB)")
+    time.sleep(delay)
+    print(f"{filename} загружен")
+
+# Передача аргументов через args (кортеж)
+thread1 = threading.Thread(
+    target=download_file,
+    args=("file1.txt", 100)  # позиционные аргументы
+)
+
+# Передача через args и kwargs
+thread2 = threading.Thread(
+    target=download_file,
+    args=("file2.txt", 50),
+    kwargs={"delay": 2}  # именованные аргументы
+)
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+# Вывод:
+# Загружаю file1.txt (100 MB)
+# Загружаю file2.txt (50 MB)
+# file1.txt загружен
+# file2.txt загружен
+```
+
+**Ещё примеры с аргументами:**
+
+```python
+import threading
+
+# Пример 1: только args
+def add(a, b):
+    print(f"{a} + {b} = {a + b}")
+
+thread = threading.Thread(target=add, args=(5, 3))
+thread.start()
+thread.join()
+# Вывод: 5 + 3 = 8
+
+# Пример 2: только kwargs
+def greet(name, greeting="Привет"):
+    print(f"{greeting}, {name}!")
+
+thread = threading.Thread(target=greet, kwargs={"name": "Alice", "greeting": "Здравствуй"})
+thread.start()
+thread.join()
+# Вывод: Здравствуй, Alice!
+
+# Пример 3: args + kwargs
+def process(data, mode, verbose=False):
+    if verbose:
+        print(f"Обрабатываю {data} в режиме {mode}")
+    else:
+        print(f"Обработка {data}")
+
+thread = threading.Thread(
+    target=process,
+    args=("данные", "fast"),
+    kwargs={"verbose": True}
+)
+thread.start()
+thread.join()
+# Вывод: Обрабатываю данные в режиме fast
+```
+
+### **Метод `start()` — запуск потока**
+
+`start()` запускает выполнение потока. После вызова `start()` поток начинает работать параллельно с основной программой.
+
+```python
+import threading
+import time
+
+def worker(name):
+    print(f"{name}: начал работу")
+    time.sleep(2)
+    print(f"{name}: закончил работу")
+
+# Создаём потоки
+thread1 = threading.Thread(target=worker, args=("Поток-1",))
+thread2 = threading.Thread(target=worker, args=("Поток-2",))
+
+print("Запускаю потоки...")
+
+# Запускаем потоки
+thread1.start()  # Поток-1 начинает работать
+thread2.start()  # Поток-2 начинает работать
+
+print("Потоки запущены, основная программа продолжает работу")
+
+# ВАЖНО: start() вызывается только один раз!
+# thread1.start()  # RuntimeError: threads can only be started once
+
+# Основная программа продолжает работать параллельно
+for i in range(3):
+    print(f"Основной поток: {i}")
+    time.sleep(0.5)
+
+# Вывод:
+# Запускаю потоки...
+# Поток-1: начал работу
+# Поток-2: начал работу
+# Потоки запущены, основная программа продолжает работу
+# Основной поток: 0
+# Основной поток: 1
+# Основной поток: 2
+# Поток-1: закончил работу
+# Поток-2: закончил работу
+```
+
+### **Метод `join()` — ожидание завершения потока**
+
+`join()` блокирует выполнение основной программы до тех пор, пока поток не завершится. Это нужно, чтобы дождаться результата работы потока.
+
+```python
+import threading
+import time
+
+def long_task(name, duration):
+    print(f"{name}: начинаю задачу на {duration} сек")
+    time.sleep(duration)
+    print(f"{name}: задача завершена")
+
+# Создаём и запускаем потоки
+thread1 = threading.Thread(target=long_task, args=("Поток-1", 2))
+thread2 = threading.Thread(target=long_task, args=("Поток-2", 3))
+
+thread1.start()
+thread2.start()
+
+print("Потоки запущены")
+
+# БЕЗ join() — основная программа не ждёт
+# print("Программа завершена")
+# Программа может завершиться до окончания потоков!
+
+# С join() — ждём завершения
+thread1.join()  # Ждём, пока Поток-1 закончит
+print("Поток-1 завершён")
+
+thread2.join()  # Ждём, пока Поток-2 закончит
+print("Поток-2 завершён")
+
+print("Все потоки завершены, программа завершается")
+
+# Вывод:
+# Поток-1: начинаю задачу на 2 сек
+# Поток-2: начинаю задачу на 3 сек
+# Потоки запущены
+# Поток-1: задача завершена
+# Поток-1 завершён
+# Поток-2: задача завершена
+# Поток-2 завершён
+# Все потоки завершены, программа завершается
+```
+
+**`join()` с таймаутом:**
+
+```python
+import threading
+import time
+
+def slow_task():
+    print("Начинаю долгую задачу...")
+    time.sleep(5)
+    print("Задача завершена")
+
+thread = threading.Thread(target=slow_task)
+thread.start()
+
+# Ждём максимум 2 секунды
+thread.join(timeout=2)
+
+# Проверяем, завершился ли поток
+if thread.is_alive():
+    print("Поток всё ещё работает (превышен таймаут)")
+else:
+    print("Поток завершён")
+
+# Вывод:
+# Начинаю долгую задачу...
+# Поток всё ещё работает (превышен таймаут)
+# (через 3 секунды)
+# Задача завершена
+```
+
+### **Практический пример — загрузка файлов:**
+
+```python
+import threading
+import time
+
+def download_file(url, filename):
+    print(f"Начинаю загрузку {filename} с {url}")
+    time.sleep(2)  # Имитация загрузки
+    print(f"✓ {filename} загружен")
+
+# Список файлов для загрузки
+files = [
+    ("http://site.com/file1.pdf", "документ1.pdf"),
+    ("http://site.com/file2.jpg", "фото1.jpg"),
+    ("http://site.com/file3.zip", "архив1.zip"),
+]
+
+# Создаём потоки для каждого файла
+threads = []
+
+start_time = time.time()
+
+for url, filename in files:
+    thread = threading.Thread(
+        target=download_file,
+        args=(url, filename)
+    )
+    threads.append(thread)
+    thread.start()
+
+# Ждём завершения всех потоков
+for thread in threads:
+    thread.join()
+
+elapsed = time.time() - start_time
+print(f"\nВсе файлы загружены за {elapsed:.2f} секунд")
+
+# Вывод:
+# Начинаю загрузку документ1.pdf с http://site.com/file1.pdf
+# Начинаю загрузку фото1.jpg с http://site.com/file2.jpg
+# Начинаю загрузку архив1.zip с http://site.com/file3.zip
+# ✓ документ1.pdf загружен
+# ✓ фото1.jpg загружен
+# ✓ архив1.zip загружен
+#
+# Все файлы загружены за 2.00 секунд
+```
+
+**Ключевые моменты:**
+
+- `Thread(target=func)` — создаёт поток для выполнения функции
+- `args=(...)` — передаёт позиционные аргументы (кортеж)
+- `kwargs={...}` — передаёт именованные аргументы (словарь)
+- `start()` — запускает поток (вызывается один раз!)
+- `join()` — ждёт завершения потока
+- `join(timeout=N)` — ждёт максимум N секунд
+- `is_alive()` — проверяет, работает ли поток
+
 ## `32.6` Наследование от класса Thread — создание собственных потоков
+Вместо передачи функции в `target`, можно создать собственный класс, унаследованный от `Thread`, и переопределить метод `run()`. Это удобно для сложных потоков с собственным состоянием и логикой.
+
+### **Базовый синтаксис:**
+
+```python
+import threading
+import time
+
+class MyThread(threading.Thread):
+    def run(self):
+        """Этот метод выполняется при вызове start()"""
+        print(f"Поток {self.name} запущен")
+        time.sleep(2)
+        print(f"Поток {self.name} завершён")
+
+# Создание и запуск
+thread = MyThread()
+thread.start()
+thread.join()
+
+# Вывод:
+# Поток Thread-1 запущен
+# Поток Thread-1 завершён
+```
+
+### **Пример с параметрами в конструкторе:**
+
+```python
+import threading
+import time
+
+class DownloadThread(threading.Thread):
+    def __init__(self, url, filename):
+        super().__init__()  # ВАЖНО: вызвать конструктор родителя!
+        self.url = url
+        self.filename = filename
+        self.result = None
+    
+    def run(self):
+        """Логика загрузки файла"""
+        print(f"Загружаю {self.filename} с {self.url}")
+        time.sleep(2)  # Имитация загрузки
+        self.result = f"{self.filename} загружен"
+        print(f"✓ {self.result}")
+
+# Создание и запуск потоков
+thread1 = DownloadThread("http://site.com/file1.pdf", "документ.pdf")
+thread2 = DownloadThread("http://site.com/file2.jpg", "фото.jpg")
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+# Получение результатов
+print(f"Результат 1: {thread1.result}")
+print(f"Результат 2: {thread2.result}")
+
+# Вывод:
+# Загружаю документ.pdf с http://site.com/file1.pdf
+# Загружаю фото.jpg с http://site.com/file2.jpg
+# ✓ документ.pdf загружен
+# ✓ фото.jpg загружен
+# Результат 1: документ.pdf загружен
+# Результат 2: фото.jpg загружен
+```
+
+### **Пример с обработкой данных:**
+
+```python
+import threading
+import time
+
+class DataProcessor(threading.Thread):
+    def __init__(self, data, processor_id):
+        super().__init__()
+        self.data = data
+        self.processor_id = processor_id
+        self.result = 0
+    
+    def run(self):
+        print(f"Процессор {self.processor_id}: начинаю обработку {len(self.data)} элементов")
+        time.sleep(1)  # Имитация обработки
+        self.result = sum(self.data)
+        print(f"Процессор {self.processor_id}: результат = {self.result}")
+
+# Данные для обработки
+data = list(range(100))
+chunk_size = 25
+
+# Создаём несколько процессоров
+processors = []
+for i in range(4):
+    chunk = data[i*chunk_size:(i+1)*chunk_size]
+    processor = DataProcessor(chunk, i+1)
+    processors.append(processor)
+    processor.start()
+
+# Ждём завершения
+for processor in processors:
+    processor.join()
+
+# Собираем результаты
+total = sum(p.result for p in processors)
+print(f"\nИтоговый результат: {total}")
+
+# Вывод:
+# Процессор 1: начинаю обработку 25 элементов
+# Процессор 2: начинаю обработку 25 элементов
+# Процессор 3: начинаю обработку 25 элементов
+# Процессор 4: начинаю обработку 25 элементов
+# Процессор 1: результат = 300
+# Процессор 2: результат = 925
+# Процессор 3: результат = 1550
+# Процессор 4: результат = 2175
+#
+# Итоговый результат: 4950
+```
+
+### **Когда использовать наследование:**
+
+✅ **Используйте класс, если:**
+- Поток имеет сложную логику
+- Нужно хранить состояние (результаты, промежуточные данные)
+- Требуется переиспользование логики потока
+- Нужны дополнительные методы
+
+❌ **Используйте `target`, если:**
+- Простая функция без состояния
+- Одноразовая задача
+- Не нужны дополнительные методы
+
+**Ключевые моменты:**
+- Наследуйтесь от `threading.Thread`
+- Вызовите `super().__init__()` в конструкторе
+- Переопределите метод `run()` с логикой потока
+- Результаты храните в атрибутах экземпляра
+- Запускайте через `start()`, а не `run()`!
+
+
 ## `32.7` Daemon потоки — что это и когда использовать
-## `32.8` Синхронизация потоков:
-`Lock` — блокировка для предотвращения гонки данных
-`RLock` — рекурсивная блокировка
-`Semaphore` — ограничение количества одновременных доступов
-`Event` — сигнализация между потоками
-`Condition` — условная синхронизация
-## `32.9` Проблема гонки данных (race condition) и как её избежать
+**Daemon поток (фоновый поток)** — это поток, который автоматически завершается при завершении главной программы. В отличие от обычных потоков, программа не ждёт завершения daemon-потоков.
+
+### **Обычные vs Daemon потоки:**
+
+```python
+import threading
+import time
+
+def worker(name, is_daemon):
+    print(f"{name}: начал работу")
+    time.sleep(3)
+    print(f"{name}: закончил работу")
+
+# Обычный поток
+normal_thread = threading.Thread(target=worker, args=("Обычный", False))
+
+# Daemon поток (устанавливается ПЕРЕД start!)
+daemon_thread = threading.Thread(target=worker, args=("Daemon", True))
+daemon_thread.daemon = True  # Помечаем как daemon
+
+print("Запускаю потоки...")
+normal_thread.start()
+daemon_thread.start()
+
+print("Главная программа ждёт 1 секунду и завершается")
+time.sleep(1)
+print("Главная программа завершена")
+
+# Вывод:
+# Запускаю потоки...
+# Обычный: начал работу
+# Daemon: начал работу
+# Главная программа ждёт 1 секунду и завершается
+# Главная программа завершена
+# Обычный: закончил работу
+# (Daemon поток принудительно завершён, не выведет "закончил работу")
+```
+
+### **Как создать daemon поток:**
+
+```python
+import threading
+
+def task():
+    print("Работаю...")
+
+# Способ 1: через атрибут daemon (ПЕРЕД start!)
+thread1 = threading.Thread(target=task)
+thread1.daemon = True
+thread1.start()
+
+# Способ 2: через параметр конструктора
+thread2 = threading.Thread(target=task, daemon=True)
+thread2.
+```
+
+### **Примеры из реальной жизни**
+1) `Автоматическая очистка мусора`
+Например, служба, удаляющая временные файлы на сервере — она просто работает в фоне и всё завершает, когда сервер отключается.
+
+2) `Мониторинг состояния системы`
+Системные утилиты, отслеживающие температуру CPU, загрузку диска, состояние сетевого подключения — работают в фоне и не требуют ручного контроля.
+
+3) `Логгирование событий`
+Приложения, которые пишут логи в отдельном потоке: поток логгирования работает в фоне, не блокируя основную работу.
+
+4) `Фоновые проверки почты или обновлений`
+Почтовые клиенты периодически проверяют новые письма в фоне; обновлялка приложений раз в час ищет апдейты и завершает работу с выходом из программы.
+
+5) `Слежение за действиями пользователя`
+В IDE или браузере отдельный поток может следить за действиями пользователя (например, автосохранение или запись макросов), завершаясь, если пользователь закроет приложение.
+
+6) `Сетевые "сердцебиения" (heartbeat)`
+Сервис отправляет регулярные сообщения, чтобы показать, что всё работает — такой поток завершится, если программа выключится.
+
+
+## `32.8` Проблема гонки данных (race condition)
+### Что такое race condition?
+**Race condition (гонка данных)** — это ситуация, когда результат работы программы зависит от порядка выполнения потоков, который невозможно предсказать. Возникает, когда несколько потоков одновременно пытаются читать и изменять общие данные.
+
+#### Почему это происходит?
+
+Даже простая операция `counter += 1` на самом деле состоит из нескольких шагов:
+1. Прочитать текущее значение `counter`
+2. Увеличить его на 1
+3. Записать новое значение обратно
+
+Если два потока выполняют эти шаги одновременно, они могут "наступить друг другу на пятки".
+
+### Пример проблемы
+
+```python
+import threading
+import time
+
+counter = 0
+
+def increment():
+    global counter
+    for _ in range(100000):
+        counter += 1
+
+# Создаём 5 потоков
+threads = []
+for _ in range(5):
+    t = threading.Thread(target=increment)
+    threads.append(t)
+    t.start()
+
+# Ждём завершения всех потоков
+for t in threads:
+    t.join()
+
+print(f"Ожидаемое значение: {5 * 100000}")
+print(f"Реальное значение: {counter}")
+```
+
+**Вывод (может варьироваться):**
+```
+Ожидаемое значение: 500000
+Реальное значение: 287463
+```
+
+Значение меньше ожидаемого! Это классический пример race condition — потоки "затёрли" изменения друг друга.
+
+### Как избежать race condition?
+
+#### 1. Использование блокировок (Lock)
+
+Самый простой способ — использовать `threading.Lock()`, чтобы только один поток мог изменять данные в определённый момент времени.
+
+```python
+import threading
+
+counter = 0
+lock = threading.Lock()
+
+def increment_safe():
+    global counter
+    for _ in range(100000):
+        with lock:  # Блокируем доступ для других потоков
+            counter += 1
+
+threads = []
+for _ in range(5):
+    t = threading.Thread(target=increment_safe)
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+
+print(f"Ожидаемое значение: {5 * 100000}")
+print(f"Реальное значение: {counter}")
+```
+
+**Вывод:**
+```
+Ожидаемое значение: 500000
+Реальное значение: 500000
+```
+
+Теперь результат правильный! Блокировка гарантирует, что только один поток за раз может выполнять код внутри `with lock:`.
+
+#### 2. Работа со списками
+
+```python
+import threading
+
+results = []
+lock = threading.Lock()
+
+def add_items(start, end):
+    for i in range(start, end):
+        with lock:
+            results.append(i)
+
+threads = []
+for i in range(5):
+    t = threading.Thread(target=add_items, args=(i*1000, (i+1)*1000))
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+
+print(f"Добавлено элементов: {len(results)}")
+print(f"Первые 10: {sorted(results)[:10]}")
+```
+
+#### 3. Банковский счёт — классический пример
+
+```python
+import threading
+import time
+import random
+
+class BankAccount:
+    def __init__(self, balance):
+        self.balance = balance
+        self.lock = threading.Lock()
+    
+    def withdraw(self, amount):
+        with self.lock:
+            if self.balance >= amount:
+                # Имитируем задержку (проверка, обработка и т.д.)
+                time.sleep(0.001)
+                self.balance -= amount
+                return True
+            return False
+    
+    def deposit(self, amount):
+        with self.lock:
+            self.balance += amount
+
+account = BankAccount(1000)
+
+def make_transactions(account_obj):
+    for _ in range(10):
+        # Случайная операция: снятие или пополнение
+        if random.choice([True, False]):
+            amount = random.randint(10, 100)
+            if account_obj.withdraw(amount):
+                print(f"Снято {amount}, баланс: {account_obj.balance}")
+        else:
+            amount = random.randint(10, 100)
+            account_obj.deposit(amount)
+            print(f"Пополнено {amount}, баланс: {account_obj.balance}")
+
+threads = []
+for _ in range(3):
+    t = threading.Thread(target=make_transactions, args=(account,))
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+
+print(f"\nИтоговый баланс: {account.balance}")
+```
+
+Без блокировки баланс мог бы стать отрицательным или операции могли бы "потеряться".
+
+### Когда блокировки не нужны?
+
+Есть случаи, когда race condition не возникает:
+
+#### 1. Потоки работают с разными данными
+
+```python
+import threading
+
+def process_range(start, end, results, index):
+    # Каждый поток записывает в свою ячейку списка
+    results[index] = sum(range(start, end))
+
+results = [0, 0, 0, 0]
+threads = []
+
+for i in range(4):
+    t = threading.Thread(
+        target=process_range,
+        args=(i*250, (i+1)*250, results, i)
+    )
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+
+print(f"Результаты: {results}")
+print(f"Сумма: {sum(results)}")
+```
+
+Здесь блокировка не нужна, потому что каждый поток работает со своим индексом.
+
+#### 2. Только чтение данных
+
+```python
+import threading
+
+# Общие данные, которые только читаются
+config = {
+    'timeout': 30,
+    'max_retries': 3,
+    'server': 'example.com'
+}
+
+def worker(worker_id):
+    # Только читаем данные — безопасно без блокировок
+    timeout = config['timeout']
+    print(f"Воркер {worker_id} использует timeout={timeout}")
+
+threads = []
+for i in range(5):
+    t = threading.Thread(target=worker, args=(i,))
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
+```
+
+### Резюме
+
+**Race condition возникает когда:**
+- Несколько потоков обращаются к общим данным
+- Хотя бы один поток изменяет эти данные
+- Операции не синхронизированы
+
+**Как избежать:**
+- Используйте `threading.Lock()` для критических секций
+- Применяйте контекстный менеджер `with lock:` для автоматического освобождения блокировки
+- Проектируйте код так, чтобы потоки работали с разными данными
+- Используйте потокобезопасные структуры данных (о них в следующих топиках)
+
+
+## `32.9` Синхронизация потоков: `Lock`, `RLock`, `Semaphore`, `Event`, `Condition`
+Модуль `threading` предоставляет несколько примитивов синхронизации для координации работы потоков. Каждый из них решает свои задачи.
+
+### 1. Lock — базовая блокировка
+
+`Lock` — самый простой примитив синхронизации. Работает как замок: один поток "запирает" его, другие ждут, пока он не "откроется".
+
+#### Основные методы:
+- `acquire()` — захватить блокировку (заблокировать, если уже занята)
+- `release()` — освободить блокировку
+- `locked()` — проверить, занята ли блокировка
+
+```python
+import threading
+import time
+
+lock = threading.Lock()
+counter = 0
+
+def increment_with_lock():
+    global counter
+    for _ in range(100000):
+        lock.acquire()
+        try:
+            counter += 1
+        finally:
+            lock.release()  # Обязательно освобождаем в finally
+
+# Или используем контекстный менеджер (рекомендуется)
+def increment_safe():
+    global counter
+    for _ in range(100000):
+        with lock:  # Автоматически вызывает acquire и release
+            counter += 1
+
+threads = [threading.Thread(target=increment_safe) for _ in range(5)]
+
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print(f"Counter: {counter}")
+```
+
+#### Важно!
+Lock нельзя захватить дважды в одном потоке:
+
+```python
+lock = threading.Lock()
+
+lock.acquire()
+lock.acquire()  # Зависнет навсегда! Deadlock
+lock.release()
+```
+
+### 2. RLock — рекурсивная блокировка
+
+`RLock` (Reentrant Lock) позволяет одному и тому же потоку захватывать блокировку несколько раз. Полезно для рекурсивных функций.
+
+```python
+import threading
+
+rlock = threading.RLock()
+
+def recursive_function(n):
+    with rlock:
+        print(f"Уровень {n}")
+        if n > 0:
+            recursive_function(n - 1)  # Повторный захват той же блокировки
+
+thread = threading.Thread(target=recursive_function, args=(5,))
+thread.start()
+thread.join()
+```
+
+**Вывод:**
+```
+Уровень 5
+Уровень 4
+Уровень 3
+Уровень 2
+Уровень 1
+Уровень 0
+```
+
+#### Пример с классом
+
+```python
+import threading
+
+class Counter:
+    def __init__(self):
+        self.value = 0
+        self.lock = threading.RLock()
+    
+    def increment(self):
+        with self.lock:
+            self.value += 1
+    
+    def increment_by(self, amount):
+        with self.lock:  # Первый захват блокировки
+            for _ in range(amount):
+                self.increment()  # Повторный захват — работает благодаря RLock!
+
+counter = Counter()
+threads = [threading.Thread(target=counter.increment_by, args=(1000,)) for _ in range(5)]
+
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print(f"Counter: {counter.value}")
+```
+
+### 3. Semaphore — ограничение количества доступов
+
+`Semaphore` позволяет ограничить количество потоков, которые могут одновременно выполнять определённый код. Это как турникет с несколькими проходами.
+
+```python
+import threading
+import time
+
+# Разрешаем только 3 одновременных подключения
+semaphore = threading.Semaphore(3)
+
+def access_resource(worker_id):
+    print(f"Воркер {worker_id} ждёт доступа...")
+    with semaphore:
+        print(f"Воркер {worker_id} получил доступ к ресурсу")
+        time.sleep(2)  # Имитация работы с ресурсом
+        print(f"Воркер {worker_id} освободил ресурс")
+
+threads = [threading.Thread(target=access_resource, args=(i,)) for i in range(10)]
+
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+```
+
+**Вывод (с задержками):**
+```
+Воркер 0 ждёт доступа...
+Воркер 1 ждёт доступа...
+Воркер 2 ждёт доступа...
+Воркер 0 получил доступ к ресурсу
+Воркер 1 получил доступ к ресурсу
+Воркер 2 получил доступ к ресурсу
+Воркер 3 ждёт доступа...
+Воркер 4 ждёт доступа...
+...
+```
+
+#### Практический пример: ограничение запросов к API
+
+```python
+import threading
+import time
+import random
+
+# Ограничиваем до 5 одновременных запросов
+api_semaphore = threading.Semaphore(5)
+
+def make_api_request(request_id):
+    with api_semaphore:
+        print(f"Запрос {request_id} отправлен")
+        time.sleep(random.uniform(0.5, 2))  # Имитация запроса
+        print(f"Запрос {request_id} завершён")
+
+threads = [threading.Thread(target=make_api_request, args=(i,)) for i in range(20)]
+
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+print("Все запросы выполнены")
+```
+
+### 4. Event — сигнализация между потоками
+
+`Event` используется для оповещения потоков о каких-то событиях. Работает как флаг: установлен или не установлен.
+
+#### Основные методы:
+- `set()` — установить флаг (событие произошло)
+- `clear()` — сбросить флаг
+- `wait(timeout=None)` — ждать, пока флаг не будет установлен
+- `is_set()` — проверить состояние флага
+
+```python
+import threading
+import time
+
+event = threading.Event()
+
+def waiter(name):
+    print(f"{name}: Жду сигнала...")
+    event.wait()  # Блокируется до вызова event.set()
+    print(f"{name}: Получил сигнал! Начинаю работу")
+
+def sender():
+    print("Sender: Готовлю данные...")
+    time.sleep(3)
+    print("Sender: Данные готовы, отправляю сигнал")
+    event.set()  # Разблокирует все ожидающие потоки
+
+# Создаём несколько ожидающих потоков
+waiters = [threading.Thread(target=waiter, args=(f"Воркер-{i}",)) for i in range(3)]
+sender_thread = threading.Thread(target=sender)
+
+for t in waiters:
+    t.start()
+
+sender_thread.start()
+
+for t in waiters:
+    t.join()
+sender_thread.join()
+```
+
+**Вывод:**
+```
+Воркер-0: Жду сигнала...
+Воркер-1: Жду сигнала...
+Воркер-2: Жду сигнала...
+Sender: Готовлю данные...
+Sender: Данные готовы, отправляю сигнал
+Воркер-0: Получил сигнал! Начинаю работу
+Воркер-1: Получил сигнал! Начинаю работу
+Воркер-2: Получил сигнал! Начинаю работу
+```
+
+#### Пример: запуск задач по сигналу
+
+```python
+import threading
+import time
+
+start_event = threading.Event()
+stop_event = threading.Event()
+
+def worker(worker_id):
+    print(f"Воркер {worker_id} готов")
+    start_event.wait()  # Ждём команды на старт
+    
+    print(f"Воркер {worker_id} начал работу")
+    while not stop_event.is_set():
+        print(f"Воркер {worker_id} работает...")
+        time.sleep(1)
+    
+    print(f"Воркер {worker_id} остановлен")
+
+threads = [threading.Thread(target=worker, args=(i,)) for i in range(3)]
+
+for t in threads:
+    t.start()
+
+time.sleep(2)
+print("Даём команду на старт!")
+start_event.set()
+
+time.sleep(5)
+print("Даём команду на остановку!")
+stop_event.set()
+
+for t in threads:
+    t.join()
+```
+
+### 5. Condition — условная синхронизация
+
+`Condition` — это комбинация блокировки и события. Позволяет потокам ждать определённого условия и уведомлять друг друга.
+
+#### Основные методы:
+- `wait()` — ждать уведомления
+- `notify(n=1)` — уведомить n ожидающих потоков
+- `notify_all()` — уведомить все ожидающие потоки
+
+```python
+import threading
+import time
+import random
+
+condition = threading.Condition()
+items = []
+
+def producer():
+    for i in range(5):
+        time.sleep(random.uniform(0.5, 1.5))
+        with condition:
+            item = f"Товар-{i}"
+            items.append(item)
+            print(f"Производитель создал: {item}")
+            condition.notify()  # Уведомляем одного потребителя
+
+def consumer(consumer_id):
+    while True:
+        with condition:
+            while not items:  # Пока список пуст
+                print(f"Потребитель {consumer_id} ждёт товара...")
+                condition.wait()  # Ждём уведомления
+            
+            item = items.pop(0)
+            print(f"Потребитель {consumer_id} получил: {item}")
+            
+            if "Товар-4" in item:  # Последний товар
+                break
+
+producer_thread = threading.Thread(target=producer)
+consumer_threads = [threading.Thread(target=consumer, args=(i,)) for i in range(2)]
+
+producer_thread.start()
+for t in consumer_threads:
+    t.start()
+
+producer_thread.join()
+for t in consumer_threads:
+    t.join()
+```
+
+#### Пример: очередь задач с ограничением
+
+```python
+import threading
+import time
+
+class TaskQueue:
+    def __init__(self, max_size):
+        self.queue = []
+        self.max_size = max_size
+        self.condition = threading.Condition()
+    
+    def put(self, task):
+        with self.condition:
+            while len(self.queue) >= self.max_size:
+                print(f"Очередь полна, ждём...")
+                self.condition.wait()
+            
+            self.queue.append(task)
+            print(f"Добавлена задача: {task}")
+            self.condition.notify()  # Уведомляем потребителя
+    
+    def get(self):
+        with self.condition:
+            while not self.queue:
+                print("Очередь пуста, ждём задачи...")
+                self.condition.wait()
+            
+            task = self.queue.pop(0)
+            print(f"Получена задача: {task}")
+            self.condition.notify()  # Уведомляем производителя
+            return task
+
+task_queue = TaskQueue(max_size=3)
+
+def producer():
+    for i in range(10):
+        time.sleep(0.5)
+        task_queue.put(f"Задача-{i}")
+
+def consumer():
+    for _ in range(10):
+        task = task_queue.get()
+        time.sleep(1)  # Обработка задачи
+
+producer_thread = threading.Thread(target=producer)
+consumer_thread = threading.Thread(target=consumer)
+
+producer_thread.start()
+consumer_thread.start()
+
+producer_thread.join()
+consumer_thread.join()
+```
+
+### Сравнительная таблица
+
+| Примитив | Когда использовать |
+|----------|-------------------|
+| **Lock** | Защита общих данных от одновременного изменения |
+| **RLock** | Когда один поток может захватывать блокировку несколько раз (рекурсия) |
+| **Semaphore** | Ограничение количества одновременных доступов к ресурсу |
+| **Event** | Простая сигнализация между потоками (старт/стоп) |
+| **Condition** | Сложная координация: ожидание определённых условий и уведомления |
+
+### Резюме
+
+- **Lock** — базовая защита от race condition
+- **RLock** — для случаев с повторным захватом блокировки в одном потоке
+- **Semaphore** — ограничение числа одновременных доступов (например, к API или БД)
+- **Event** — простая сигнализация (флаг "да/нет")
+- **Condition** — продвинутая координация с ожиданием условий
+
+Выбирайте примитив в зависимости от задачи. В большинстве случаев достаточно `Lock` или `RLock`. Для более сложных сценариев используйте `Semaphore`, `Event` или `Condition`.
+
+
 ## `32.10` Deadlock (взаимная блокировка) — что это и как предотвратить
 ## `32.11` Модуль queue для безопасного обмена данными между потоками:
 `Queue` — FIFO очередь
