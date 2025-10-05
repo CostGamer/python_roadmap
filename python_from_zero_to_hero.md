@@ -2693,25 +2693,812 @@ weak2 = weakref.ref({'a': 1})   # OK
 ----
 
 # `11` (`*`) Функции 2
-## `11.1` Встроенные функции `type()`, `sorted()`, `reversed()`, `isinstance()`, `callable()`, `hasattr()`, `hash()` и другие  
-## `11.2` Позиционные и именованные аргументы  
-## `11.3` Аргументы по умолчанию  
-## `11.4` Функции высшего порядка  
-## `11.5` `lambda` функции  
-## `11.6` `map()`, `filter()`, `reduce()`. Кейсы их применения  
-## `11.7` `any()`, `all()`, `zip()`, `enumerate()`  
+## `11.1` Встроенные функции `type()`, `sorted()`, `reversed()`, `isinstance()`, `callable()`, `hasattr()`, `hash()`
+### **`type()` — определение типа объекта**
 
-----
+```python
+print(type(42))           # <class 'int'>
+print(type("hello"))      # <class 'str'>
+print(type([1, 2, 3]))    # <class 'list'>
+
+# Сравнение типов
+x = 10
+if type(x) == int:
+    print("x — это число")
+```
+
+### **`sorted()` — сортировка (создаёт новый список)**
+
+```python
+numbers = [5, 2, 8, 1, 9]
+print(sorted(numbers))                    # [1, 2, 5, 8, 9]
+print(sorted(numbers, reverse=True))      # [9, 8, 5, 2, 1]
+
+# Сортировка по ключу
+students = [("Alice", 85), ("Bob", 92)]
+print(sorted(students, key=lambda x: x[1]))  # [('Alice', 85), ('Bob', 92)]
+```
+
+### **`reversed()` — реверс последовательности (возвращает итератор)**
+
+```python
+numbers = [1, 2, 3, 4, 5]
+print(list(reversed(numbers)))  # [5, 4, 3, 2, 1]
+
+# Со строками
+print(''.join(reversed("Python")))  # nohtyP
+```
+
+### **`isinstance()` — проверка типа объекта**
+
+```python
+x = 42
+print(isinstance(x, int))              # True
+print(isinstance(x, str))              # False
+print(isinstance(x, (int, float)))     # True (проверка нескольких типов)
+
+# Использование
+def process(data):
+    if isinstance(data, str):
+        return data.upper()
+    elif isinstance(data, int):
+        return data * 2
+
+print(process("hello"))  # HELLO
+print(process(5))        # 10
+```
+
+### **`callable()` — проверка, можно ли вызвать объект**
+
+```python
+def greet():
+    return "Hello"
+
+print(callable(greet))     # True (функция)
+print(callable(42))        # False (число)
+print(callable([1, 2]))    # False (список)
+
+# Безопасный вызов
+callback = lambda x: x * 2
+if callable(callback):
+    print(callback(5))  # 10
+```
+
+### **`hasattr()` — проверка наличия атрибута**
+
+```python
+text = "hello"
+print(hasattr(text, 'upper'))   # True
+print(hasattr(text, 'append'))  # False
+
+class Person:
+    def __init__(self, name):
+        self.name = name
+
+person = Person("Alice")
+print(hasattr(person, 'name'))  # True
+print(hasattr(person, 'age'))   # False
+```
+
+### **`hash()` — получение хеш-значения**
+
+```python
+# Работает с неизменяемыми объектами
+print(hash(42))         # 42
+print(hash("hello"))    # Число
+print(hash((1, 2, 3)))  # Число
+
+# Изменяемые объекты не хешируемы
+try:
+    hash([1, 2, 3])  # TypeError
+except TypeError:
+    print("Списки не хешируемы")
+
+# Проверка, можно ли использовать как ключ словаря
+def can_be_key(obj):
+    try:
+        hash(obj)
+        return True
+    except TypeError:
+        return False
+
+print(can_be_key("text"))   # True
+print(can_be_key([1, 2]))   # False
+```
+
+**Когда использовать:**
+- `type()` — узнать тип (лучше использовать `isinstance()` для проверок)
+- `sorted()` — создать новый отсортированный список
+- `reversed()` — итерация в обратном порядке
+- `isinstance()` — проверка типа (работает с наследованием)
+- `callable()` — проверка перед вызовом функции
+- `hasattr()` — безопасная проверка атрибутов
+- `hash()` — проверка хешируемости объекта
+
+## `11.2` Позиционные и именованные аргументы
+При вызове функции можно передавать аргументы двумя способами: по позиции (порядок важен) или по имени (порядок не важен).
+
+### **Позиционные аргументы**
+
+Аргументы передаются в том порядке, в котором определены параметры функции.
+
+```python
+def greet(name, age):
+    print(f"Привет, {name}! Тебе {age} лет.")
+
+# Порядок важен!
+greet("Alice", 25)  # Привет, Alice! Тебе 25 лет.
+greet(25, "Alice")  # Привет, 25! Тебе Alice лет. (неправильно!)
+```
+
+### **Именованные аргументы (keyword arguments)**
+
+Аргументы передаются с указанием имени параметра. Порядок не важен.
+
+```python
+def greet(name, age):
+    print(f"Привет, {name}! Тебе {age} лет.")
+
+# Порядок не важен
+greet(name="Alice", age=25)  # Привет, Alice! Тебе 25 лет.
+greet(age=25, name="Alice")  # Привет, Alice! Тебе 25 лет. (тот же результат)
+```
+
+### **Комбинирование**
+
+Можно комбинировать оба способа, но позиционные должны идти **перед** именованными.
+
+```python
+def create_user(username, email, age, city):
+    print(f"{username}, {email}, {age}, {city}")
+
+# Сначала позиционные, потом именованные
+create_user("alice", "alice@mail.com", age=25, city="Moscow")
+# alice, alice@mail.com, 25, Moscow
+
+# Ошибка: именованный аргумент перед позиционным
+# create_user(username="alice", "alice@mail.com", 25, "Moscow")  # SyntaxError
+```
+
+### **Практические примеры**
+
+```python
+# Позиционные — короче, но менее понятно
+def calculate(a, b, operation):
+    if operation == "add":
+        return a + b
+    elif operation == "multiply":
+        return a * b
+
+result = calculate(5, 10, "add")  # Что значит "add"? Неочевидно
+print(result)  # 15
+
+# Именованные — длиннее, но понятнее
+result = calculate(a=5, b=10, operation="add")  # Понятно, что делаем
+print(result)  # 15
+
+# Для функций с множеством параметров именованные аргументы улучшают читаемость
+def send_email(to, subject, body, cc=None, bcc=None, attachments=None):
+    print(f"To: {to}, Subject: {subject}")
+
+# Непонятно
+send_email("user@mail.com", "Hello", "Text", None, None, ["file.pdf"])
+
+# Понятно
+send_email(
+    to="user@mail.com",
+    subject="Hello",
+    body="Text",
+    attachments=["file.pdf"]
+)
+```
+
+## `11.3` Аргументы по умолчанию
+Параметры функции могут иметь значения по умолчанию. Если аргумент не передан, используется значение по умолчанию.
+
+### **Базовое использование**
+
+```python
+def greet(name, greeting="Привет"):
+    print(f"{greeting}, {name}!")
+
+greet("Alice")              # Привет, Alice! (используется умолчание)
+greet("Bob", "Здравствуй")  # Здравствуй, Bob! (передано значение)
+```
+
+### **Параметры по умолчанию должны идти после обязательных**
+
+```python
+# Правильно: обязательные → по умолчанию
+def create_user(username, age=18, city="Moscow"):
+    print(f"{username}, {age}, {city}")
+
+create_user("Alice")                    # Alice, 18, Moscow
+create_user("Bob", 25)                  # Bob, 25, Moscow
+create_user("Charlie", city="SPb")      # Charlie, 18, SPb
+
+# Неправильно: параметр по умолчанию перед обязательным
+# def wrong(age=18, username):  # SyntaxError
+#     pass
+```
+
+### **Множественные параметры по умолчанию**
+
+```python
+def configure_server(host="localhost", port=8080, debug=False):
+    print(f"Server: {host}:{port}, Debug: {debug}")
+
+configure_server()                              # Server: localhost:8080, Debug: False
+configure_server("192.168.1.1")                 # Server: 192.168.1.1:8080, Debug: False
+configure_server(port=3000)                     # Server: localhost:3000, Debug: False
+configure_server("0.0.0.0", debug=True)         # Server: 0.0.0.0:8080, Debug: True
+configure_server(debug=True, port=5000)         # Server: localhost:5000, Debug: True
+```
+
+### **ВАЖНО: изменяемые объекты как значения по умолчанию (частая ошибка!)**
+
+```python
+# ОПАСНО! Список создаётся ОДИН раз при определении функции
+def add_item(item, items=[]):  
+    items.append(item)
+    return items
+
+print(add_item(1))  # [1]
+print(add_item(2))  # [1, 2] (Ожидали [2]!)
+print(add_item(3))  # [1, 2, 3] (Ожидали [3]!)
+
+# ПРАВИЛЬНО: используйте None
+def add_item_correct(item, items=None):
+    if items is None:
+        items = []  # Создаём новый список каждый раз
+    items.append(item)
+    return items
+
+print(add_item_correct(1))  # [1]
+print(add_item_correct(2))  # [2]
+print(add_item_correct(3))  # [3]
+```
+
+### **Практические примеры**
+
+```python
+# Функция для форматирования имени
+def format_name(first, last, middle=None):
+    if middle:
+        return f"{first} {middle} {last}"
+    return f"{first} {last}"
+
+print(format_name("John", "Doe"))              # John Doe
+print(format_name("John", "Doe", "Smith"))     # John Smith Doe
+
+# Функция с настройками по умолчанию
+def download_file(url, timeout=30, retries=3, verify_ssl=True):
+    print(f"Скачиваю {url}")
+    print(f"Timeout: {timeout}s, Retries: {retries}, SSL: {verify_ssl}")
+
+download_file("https://example.com/file.zip")
+# Скачиваю https://example.com/file.zip
+# Timeout: 30s, Retries: 3, SSL: True
+
+download_file("https://example.com/file.zip", timeout=60, verify_ssl=False)
+# Скачиваю https://example.com/file.zip
+# Timeout: 60s, Retries: 3, SSL: False
+
+# Расчёт скидки
+def calculate_price(base_price, discount=0, tax=0.2):
+    price_after_discount = base_price * (1 - discount)
+    final_price = price_after_discount * (1 + tax)
+    return final_price
+
+print(calculate_price(100))                # 120.0 (без скидки)
+print(calculate_price(100, discount=0.1))  # 108.0 (со скидкой 10%)
+print(calculate_price(100, 0.2, 0.15))     # 92.0 (скидка 20%, налог 15%)
+```
+
+**Ключевые правила:**
+- **Позиционные аргументы** — передаются по порядку
+- **Именованные аргументы** — передаются по имени, порядок не важен
+- **Позиционные должны идти перед именованными** при вызове
+- **Параметры по умолчанию должны идти после обязательных** при определении
+- **НЕ используйте изменяемые объекты** (списки, словари) как значения по умолчанию — используйте `None`
+
+## `11.4` Функции высшего порядка
+`Функции высшего порядка (Higher-Order Functions)` — это функции, которые принимают другие функции как аргументы или возвращают функции как результат. В Python функции являются объектами первого класса, поэтому их можно передавать и возвращать как обычные переменные.
+
+### **Функции как аргументы**
+
+```python
+def apply_operation(x, y, operation):
+    """Применяет функцию operation к x и y"""
+    return operation(x, y)
+
+def add(a, b):
+    return a + b
+
+def multiply(a, b):
+    return a * b
+
+# Передаём функции как аргументы
+print(apply_operation(5, 3, add))       # 8
+print(apply_operation(5, 3, multiply))  # 15
+```
+
+### **Функции как возвращаемое значение**
+
+```python
+def create_multiplier(factor):
+    """Возвращает функцию, которая умножает на factor"""
+    def multiplier(x):
+        return x * factor
+    return multiplier
+
+# Создаём разные функции-умножители
+double = create_multiplier(2)
+triple = create_multiplier(3)
+
+print(double(5))   # 10
+print(triple(5))   # 15
+```
+
+### **Практический пример**
+
+```python
+def process_list(numbers, transformer):
+    """Применяет функцию transformer к каждому элементу"""
+    result = []
+    for num in numbers:
+        result.append(transformer(num))
+    return result
+
+def square(x):
+    return x ** 2
+
+numbers = [1, 2, 3, 4, 5]
+print(process_list(numbers, square))  # [1, 4, 9, 16, 25]
+print(process_list(numbers, abs))     # [1, 2, 3, 4, 5]
+```
+
+## `11.5` `lambda` функции
+`lambda` — это анонимная (безымянная) функция, которая определяется в одну строку. Используется для простых операций, где не нужно полноценное определение функции.
+
+**Синтаксис:** `lambda аргументы: выражение`
+
+### **Базовое использование**
+
+```python
+# Обычная функция
+def square(x):
+    return x ** 2
+
+# То же самое через lambda
+square_lambda = lambda x: x ** 2
+
+print(square(5))         # 25
+print(square_lambda(5))  # 25
+
+# Lambda с несколькими аргументами
+add = lambda a, b: a + b
+print(add(3, 7))  # 10
+
+# Lambda без аргументов
+get_pi = lambda: 3.14159
+print(get_pi())  # 3.14159
+```
+
+### **Lambda в функциях высшего порядка**
+
+```python
+# Сортировка по длине строки
+words = ["apple", "pie", "banana", "kiwi"]
+sorted_words = sorted(words, key=lambda w: len(w))
+print(sorted_words)  # ['pie', 'kiwi', 'apple', 'banana']
+
+# Сортировка кортежей по второму элементу
+students = [("Alice", 85), ("Bob", 92), ("Charlie", 78)]
+sorted_students = sorted(students, key=lambda x: x[1])
+print(sorted_students)  # [('Charlie', 78), ('Alice', 85), ('Bob', 92)]
+
+# Фильтрация чётных чисел
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+print(evens)  # [2, 4, 6, 8, 10]
+```
+
+### **Ограничения lambda**
+
+```python
+# Lambda — только одно выражение, нельзя использовать:
+# - несколько строк
+# - операторы (if, for, while как операторы)
+# - присваивания
+
+# Можно: тернарный оператор
+absolute = lambda x: x if x >= 0 else -x
+print(absolute(-5))  # 5
+
+# Нельзя: несколько строк
+# lambda x: 
+#     result = x * 2  # SyntaxError
+#     return result
+```
+
+### **Когда использовать lambda**
+
+```python
+# Хорошо: короткие одноразовые функции
+numbers = [1, 2, 3, 4, 5]
+doubled = list(map(lambda x: x * 2, numbers))
+print(doubled)  # [2, 4, 6, 8, 10]
+
+# Плохо: сложная логика (лучше обычная функция)
+# result = filter(lambda x: x > 0 and x < 100 and x % 2 == 0 and x % 3 != 0, numbers)
+
+# Лучше:
+def is_valid(x):
+    return x > 0 and x < 100 and x % 2 == 0 and x % 3 != 0
+
+result = filter(is_valid, numbers)
+```
+
+## `11.6` `map()`, `filter()`, `reduce()`. Кейсы их применения
+### **`map()` — применение функции к каждому элементу**
+
+```python
+# Синтаксис: map(function, iterable)
+
+numbers = [1, 2, 3, 4, 5]
+
+# Возведение в квадрат
+squared = list(map(lambda x: x ** 2, numbers))
+print(squared)  # [1, 4, 9, 16, 25]
+
+# Преобразование в строки
+strings = list(map(str, numbers))
+print(strings)  # ['1', '2', '3', '4', '5']
+
+# Работа со строками
+words = ["hello", "world", "python"]
+uppercase = list(map(str.upper, words))
+print(uppercase)  # ['HELLO', 'WORLD', 'PYTHON']
+
+# map() с несколькими последовательностями
+a = [1, 2, 3]
+b = [10, 20, 30]
+sums = list(map(lambda x, y: x + y, a, b))
+print(sums)  # [11, 22, 33]
+```
+
+**Кейсы применения `map()`:**
+- Преобразование типов данных
+- Применение операций ко всем элементам
+- Извлечение атрибутов из объектов
+
+```python
+# Практический пример: обработка цен
+prices = [100, 200, 150, 300]
+with_tax = list(map(lambda p: p * 1.2, prices))
+print(with_tax)  # [120.0, 240.0, 180.0, 360.0]
+
+# Извлечение имён
+users = [
+    {"name": "Alice", "age": 25},
+    {"name": "Bob", "age": 30}
+]
+names = list(map(lambda u: u["name"], users))
+print(names)  # ['Alice', 'Bob']
+```
+
+### **`filter()` — фильтрация элементов**
+
+```python
+# Синтаксис: filter(function, iterable)
+# Оставляет только элементы, для которых function вернула True
+
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# Только чётные
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+print(evens)  # [2, 4, 6, 8, 10]
+
+# Только положительные
+values = [-5, 3, -2, 8, 0, -1, 7]
+positives = list(filter(lambda x: x > 0, values))
+print(positives)  # [3, 8, 7]
+
+# Фильтрация строк
+words = ["apple", "banana", "kiwi", "strawberry"]
+short = list(filter(lambda w: len(w) <= 5, words))
+print(short)  # ['apple', 'kiwi']
+```
+
+**Кейсы применения `filter()`:**
+- Отбор элементов по условию
+- Удаление невалидных данных
+- Поиск подходящих элементов
+
+```python
+# Практический пример: валидация email
+emails = ["user@mail.com", "invalid", "test@test.org", "bad@"]
+valid = list(filter(lambda e: '@' in e and '.' in e.split('@')[-1], emails))
+print(valid)  # ['user@mail.com', 'test@test.org']
+
+# Фильтрация взрослых пользователей
+users = [
+    {"name": "Alice", "age": 25},
+    {"name": "Bob", "age": 17},
+    {"name": "Charlie", "age": 30}
+]
+adults = list(filter(lambda u: u["age"] >= 18, users))
+print(adults)  # [{'name': 'Alice', 'age': 25}, {'name': 'Charlie', 'age': 30}]
+```
+
+### **`reduce()` — свёртка последовательности в одно значение**
+
+```python
+from functools import reduce
+
+# Синтаксис: reduce(function, iterable, initial_value)
+# Применяет function последовательно: result = f(f(f(a, b), c), d)
+
+numbers = [1, 2, 3, 4, 5]
+
+# Сумма всех элементов
+total = reduce(lambda acc, x: acc + x, numbers)
+print(total)  # 15
+
+# То же самое с начальным значением
+total = reduce(lambda acc, x: acc + x, numbers, 0)
+print(total)  # 15
+
+# Произведение всех элементов
+product = reduce(lambda acc, x: acc * x, numbers)
+print(product)  # 120
+
+# Поиск максимума
+maximum = reduce(lambda acc, x: acc if acc > x else x, numbers)
+print(maximum)  # 5
+```
+
+**Кейсы применения `reduce()`:**
+- Вычисление общей суммы, произведения
+- Поиск минимума/максимума
+- Объединение данных в одну структуру
+
+```python
+from functools import reduce
+
+# Практический пример: подсчёт общей корзины
+cart = [
+    {"item": "Apple", "price": 50},
+    {"item": "Banana", "price": 30},
+    {"item": "Orange", "price": 40}
+]
+total_price = reduce(lambda acc, item: acc + item["price"], cart, 0)
+print(total_price)  # 120
+
+# Слияние словарей
+dicts = [{"a": 1}, {"b": 2}, {"c": 3}]
+merged = reduce(lambda acc, d: {**acc, **d}, dicts, {})
+print(merged)  # {'a': 1, 'b': 2, 'c': 3}
+
+# Построение строки
+words = ["Hello", "World", "Python"]
+sentence = reduce(lambda acc, word: acc + " " + word, words)
+print(sentence)  # Hello World Python
+```
+
+### **Комбинирование map, filter, reduce**
+
+```python
+from functools import reduce
+
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# Задача: сумма квадратов чётных чисел
+result = reduce(
+    lambda acc, x: acc + x,
+    map(lambda x: x ** 2,
+        filter(lambda x: x % 2 == 0, numbers)
+    ),
+    0
+)
+print(result)  # 220 (2²+4²+6²+8²+10² = 4+16+36+64+100)
+
+# Более читаемый вариант
+evens = filter(lambda x: x % 2 == 0, numbers)
+squared = map(lambda x: x ** 2, evens)
+total = reduce(lambda acc, x: acc + x, squared, 0)
+print(total)  # 220
+```
+
+## `11.7` `any()`, `all()`, `zip()`, `enumerate()`  
+### **`any()` — проверка наличия хотя бы одного `True`**
+
+```python
+# Возвращает True, если хотя бы один элемент True
+
+# С булевыми значениями
+print(any([False, False, True]))   # True
+print(any([False, False, False]))  # False
+print(any([True, True, True]))     # True
+
+# С числами (0 = False, остальное = True)
+print(any([0, 0, 0]))      # False
+print(any([0, 0, 5]))      # True
+print(any([1, 2, 3]))      # True
+
+# С пустыми коллекциями
+print(any([]))             # False
+print(any([0]))            # False
+
+# Практическое использование
+numbers = [2, 4, 6, 8, 9]
+has_odd = any(n % 2 != 0 for n in numbers)
+print(has_odd)  # True (есть 9)
+
+# Проверка наличия слова в списке
+words = ["apple", "banana", "cherry"]
+has_long_word = any(len(word) > 6 for word in words)
+print(has_long_word)  # False
+```
+
+### **`all()` — проверка, что все элементы `True`**
+
+```python
+# Возвращает True, если ВСЕ элементы True
+
+# С булевыми значениями
+print(all([True, True, True]))    # True
+print(all([True, False, True]))   # False
+print(all([False, False, False])) # False
+
+# С числами
+print(all([1, 2, 3]))      # True (все ненулевые)
+print(all([1, 0, 3]))      # False (есть 0)
+
+# С пустыми коллекциями
+print(all([]))             # True (пустая последовательность)
+
+# Практическое использование
+numbers = [2, 4, 6, 8, 10]
+all_even = all(n % 2 == 0 for n in numbers)
+print(all_even)  # True
+
+# Валидация данных
+ages = [18, 25, 30, 17]
+all_adults = all(age >= 18 for age in ages)
+print(all_adults)  # False (есть 17)
+
+# Проверка, что все строки не пустые
+strings = ["hello", "world", "python"]
+all_non_empty = all(len(s) > 0 for s in strings)
+print(all_non_empty)  # True
+```
+
+### **`zip()` — объединение нескольких последовательностей**
+
+```python
+# Объединяет элементы из нескольких последовательностей в кортежи
+
+# Базовое использование
+names = ["Alice", "Bob", "Charlie"]
+ages = [25, 30, 35]
+
+for name, age in zip(names, ages):
+    print(f"{name} — {age} лет")
+# Alice — 25 лет
+# Bob — 30 лет
+# Charlie — 35 лет
+
+# Преобразование в список кортежей
+pairs = list(zip(names, ages))
+print(pairs)  # [('Alice', 25), ('Bob', 30), ('Charlie', 35)]
+
+# Три и более последовательности
+cities = ["Moscow", "SPb", "Kazan"]
+combined = list(zip(names, ages, cities))
+print(combined)  # [('Alice', 25, 'Moscow'), ('Bob', 30, 'SPb'), ('Charlie', 35, 'Kazan')]
+
+# Разная длина — обрезается по минимальной
+a = [1, 2, 3, 4, 5]
+b = ['a', 'b', 'c']
+result = list(zip(a, b))
+print(result)  # [(1, 'a'), (2, 'b'), (3, 'c')]
+```
+
+**Практические примеры `zip()`:**
+
+```python
+# Создание словаря
+keys = ["name", "age", "city"]
+values = ["Alice", 25, "Moscow"]
+user = dict(zip(keys, values))
+print(user)  # {'name': 'Alice', 'age': 25, 'city': 'Moscow'}
+
+# Распаковка (unzip)
+pairs = [(1, 'a'), (2, 'b'), (3, 'c')]
+numbers, letters = zip(*pairs)
+print(numbers)  # (1, 2, 3)
+print(letters)  # ('a', 'b', 'c')
+
+# Параллельная обработка списков
+prices = [100, 200, 150]
+quantities = [2, 1, 3]
+totals = [p * q for p, q in zip(prices, quantities)]
+print(totals)  # [200, 200, 450]
+```
+
+### **`enumerate()` — получение индекса и элемента**
+
+```python
+# Возвращает кортежи (индекс, элемент)
+
+# Базовое использование
+fruits = ["apple", "banana", "cherry"]
+
+for index, fruit in enumerate(fruits):
+    print(f"{index}: {fruit}")
+# 0: apple
+# 1: banana
+# 2: cherry
+
+# Преобразование в список
+indexed = list(enumerate(fruits))
+print(indexed)  # [(0, 'apple'), (1, 'banana'), (2, 'cherry')]
+
+# Начать с другого индекса
+for index, fruit in enumerate(fruits, start=1):
+    print(f"{index}. {fruit}")
+# 1. apple
+# 2. banana
+# 3. cherry
+```
+
+**Практические примеры `enumerate()`:**
+
+```python
+# Поиск индекса элемента
+words = ["hello", "world", "python"]
+for i, word in enumerate(words):
+    if word == "python":
+        print(f"Найдено на позиции {i}")  # Найдено на позиции 2
+
+# Изменение элементов по индексу
+numbers = [10, 20, 30, 40]
+for i, num in enumerate(numbers):
+    numbers[i] = num * 2
+print(numbers)  # [20, 40, 60, 80]
+
+# Нумерованный список
+tasks = ["Купить молоко", "Написать код", "Почитать книгу"]
+for i, task in enumerate(tasks, start=1):
+    print(f"{i}. {task}")
+# 1. Купить молоко
+# 2. Написать код
+# 3. Почитать книгу
+
+# Создание словаря с индексами
+items = ["apple", "banana", "cherry"]
+indexed_dict = {i: item for i, item in enumerate(items)}
+print(indexed_dict)  # {0: 'apple', 1: 'banana', 2: 'cherry'}
+```
+
+**Когда использовать:**
+- `any()` — проверка существования хотя бы одного подходящего элемента
+- `all()` — проверка, что все элементы удовлетворяют условию
+- `zip()` — параллельная обработка нескольких списков, создание пар/троек
+- `enumerate()` — когда нужен и индекс, и значение элемента
+
 
 # `12` Работа с файлами
 ### `12.0.1` Потоковый ввод и вывод данных  
 
 ## `12.1` TXT
-### `12.1.1` Что такое контекстный менеджер?  
+### `12.1.1` (`*`) Что такое контекстный менеджер?  
 ### `12.1.2` Как читать и записывать в файл?  
 ### `12.1.3` Какие есть функции и методы для работы с TXT в Python?  
 
-## `12.2` JSON
+## `12.2` (`*`) JSON
 ### `12.2.1` Что такое JSON? Для чего он нужен?  
 ### `12.2.2` Какие есть функции и методы для работы с JSON в Python?  
 ### `12.2.3` Как происходит конвертация типов данных при сериализации?  
