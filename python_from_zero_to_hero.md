@@ -4123,11 +4123,580 @@ with open('config.json', 'r') as f:
 ----
 
 # `14` (`*`) Обработка исключений
-## `14.1` Типы ошибок. Основные исключения в Python и их иерархия  
-## `14.2` `try-except`  
-## `14.3` `else` & `finally` в `try-except`  
-## `14.4` Оператор `raise`  
+[Видео про исключения](https://youtu.be/89wpfOAgrCk?si=b7ERcnzmtdMD_MuR)
+
+## `14.1` Типы ошибок. Основные исключения в Python и их иерархия
+### **Типы ошибок**
+В Python существует три основных типа ошибок:
+
+**1. Синтаксические ошибки (Syntax Errors)**
+- Возникают при нарушении синтаксиса языка
+- Код не запустится до исправления
+
+```python
+# SyntaxError
+if True
+    print("Hello")  # Забыли двоеточие
+```
+
+**2. Ошибки выполнения (Runtime Errors / Exceptions)**
+- Возникают во время выполнения программы
+- Синтаксически корректный код, но что-то пошло не так
+
+```python
+# ZeroDivisionError
+result = 10 / 0
+
+# FileNotFoundError
+with open("несуществующий_файл.txt") as f:
+    data = f.read()
+```
+
+**3. Логические ошибки (Logical Errors)**
+- Программа работает без ошибок, но результат неверный
+- Самые сложные для обнаружения
+
+```python
+# Хотели найти среднее, но забыли разделить
+def average(numbers):
+    return sum(numbers)  # Должно быть sum(numbers) / len(numbers)
+```
+
+### **Иерархия исключений в Python**
+Все исключения в Python наследуются от базового класса `BaseException`:
+
+```
+BaseException
+├── SystemExit
+├── KeyboardInterrupt
+├── GeneratorExit
+└── Exception
+    ├── StopIteration
+    ├── ArithmeticError
+    │   ├── ZeroDivisionError
+    │   ├── OverflowError
+    │   └── FloatingPointError
+    ├── AttributeError
+    ├── EOFError
+    ├── ImportError
+    │   └── ModuleNotFoundError
+    ├── LookupError
+    │   ├── IndexError
+    │   └── KeyError
+    ├── NameError
+    ├── OSError
+    │   ├── FileNotFoundError
+    │   ├── PermissionError
+    │   └── ConnectionError
+    ├── RuntimeError
+    │   └── RecursionError
+    ├── TypeError
+    ├── ValueError
+    └── ...
+```
+
+### **Основные исключения**
+| Исключение | Описание | Пример |
+|------------|----------|---------|
+| `Exception` | Базовый класс для большинства исключений | - |
+| `ValueError` | Неправильное значение | `int("abc")` |
+| `TypeError` | Неправильный тип данных | `"5" + 5` |
+| `KeyError` | Ключ не найден в словаре | `d = {}; d["key"]` |
+| `IndexError` | Индекс вне диапазона | `[1, 2][5]` |
+| `AttributeError` | Атрибут не найден | `"text".nonexistent()` |
+| `FileNotFoundError` | Файл не найден | `open("nope.txt")` |
+| `ZeroDivisionError` | Деление на ноль | `1 / 0` |
+| `ImportError` | Ошибка импорта | `import fake_module` |
+| `NameError` | Переменная не определена | `print(x)` |
+
+**Примеры:**
+```python
+# ValueError
+age = int("двадцать")  # ValueError: invalid literal for int()
+
+# TypeError
+result = "Hello" + 5  # TypeError: can only concatenate str to str
+
+# KeyError
+user = {"name": "Alice"}
+print(user["age"])  # KeyError: 'age'
+
+# IndexError
+numbers = [1, 2, 3]
+print(numbers[10])  # IndexError: list index out of range
+
+# AttributeError
+text = "Python"
+text.append("!")  # AttributeError: 'str' object has no attribute 'append'
+
+# ZeroDivisionError
+result = 100 / 0  # ZeroDivisionError: division by zero
+```
+
+## `14.2` `try-except`
+Конструкция `try-except` позволяет перехватывать и обрабатывать исключения, чтобы программа не завершалась аварийно.
+
+**Синтаксис:**
+```python
+try:
+    # Код, который может вызвать ошибку
+    risky_code()
+except ExceptionType:
+    # Код, который выполнится при ошибке
+    handle_error()
+```
+
+### **Базовое использование**
+**Пример 1: Обработка одного исключения**
+
+```python
+try:
+    number = int(input("Введите число: "))
+    result = 100 / number
+    print(f"Результат: {result}")
+except ZeroDivisionError:
+    print("Ошибка: нельзя делить на ноль!")
+
+# Ввод: 0
+# Вывод: Ошибка: нельзя делить на ноль!
+```
+
+**Пример 2: Обработка нескольких исключений**
+
+```python
+try:
+    number = int(input("Введите число: "))
+    result = 100 / number
+    print(f"Результат: {result}")
+except ZeroDivisionError:
+    print("Ошибка: деление на ноль!")
+except ValueError:
+    print("Ошибка: введите корректное число!")
+
+# Ввод: "abc"
+# Вывод: Ошибка: введите корректное число!
+```
+
+**Пример 3: Несколько исключений в одном блоке**
+
+```python
+try:
+    data = {"name": "Alice"}
+    print(data["age"])
+except (KeyError, IndexError, TypeError) as e:
+    print(f"Ошибка доступа к данным: {e}")
+
+# Вывод: Ошибка доступа к данным: 'age'
+```
+
+### **Получение информации об ошибке**
+
+```python
+try:
+    result = 10 / 0
+except ZeroDivisionError as error:
+    print(f"Произошла ошибка: {error}")
+    print(f"Тип ошибки: {type(error).__name__}")
+
+# Вывод:
+# Произошла ошибка: division by zero
+# Тип ошибки: ZeroDivisionError
+```
+
+### **Перехват всех исключений**
+**⚠️ Не рекомендуется использовать без крайней необходимости!**
+
+```python
+try:
+    risky_operation()
+except Exception as e:
+    print(f"Что-то пошло не так: {e}")
+
+# Лучше ловить конкретные исключения
+```
+
+**Почему это плохо:**
+- Скрывает неожиданные ошибки
+- Усложняет отладку
+- Может перехватить системные исключения
+
+### **Практический пример: безопасное чтение файла**
+
+```python
+def read_file(filename):
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Файл '{filename}' не найден")
+        return None
+    except PermissionError:
+        print(f"Нет прав для чтения файла '{filename}'")
+        return None
+    except Exception as e:
+        print(f"Неожиданная ошибка: {e}")
+        return None
+
+content = read_file("data.txt")
+if content:
+    print(content)
+```
+
+## `14.3` `else` & `finally` в `try-except`
+### **Блок `else`**
+Выполняется **только если** в блоке `try` не возникло исключений.
+
+**Синтаксис:**
+```python
+try:
+    # Код, который может вызвать ошибку
+    risky_code()
+except ExceptionType:
+    # Обработка ошибки
+    handle_error()
+else:
+    # Выполняется, если ошибок не было
+    success_code()
+```
+
+**Пример:**
+```python
+try:
+    number = int(input("Введите число: "))
+    result = 100 / number
+except (ValueError, ZeroDivisionError) as e:
+    print(f"Ошибка: {e}")
+else:
+    print(f"Успешно! Результат: {result}")
+
+# Ввод: 5
+# Вывод: Успешно! Результат: 20.0
+
+# Ввод: 0
+# Вывод: Ошибка: division by zero
+```
+
+### **Блок `finally`**
+Выполняется **всегда**, независимо от того, была ошибка или нет. Используется для очистки ресурсов (закрытие файлов, соединений и т.д.).
+
+**Синтаксис:**
+```python
+try:
+    risky_code()
+except ExceptionType:
+    handle_error()
+finally:
+    # Выполняется ВСЕГДА
+    cleanup()
+```
+
+**Пример 1: Гарантированное закрытие файла**
+
+```python
+file = None
+try:
+    file = open("data.txt", "r")
+    data = file.read()
+    print(data)
+except FileNotFoundError:
+    print("Файл не найден")
+finally:
+    if file:
+        file.close()
+        print("Файл закрыт")
+
+# Файл будет закрыт в любом случае
+```
+
+**Пример 2: Логирование попыток**
+
+```python
+def divide(a, b):
+    try:
+        result = a / b
+    except ZeroDivisionError:
+        print("Ошибка: деление на ноль")
+        return None
+    else:
+        print(f"Деление успешно: {result}")
+        return result
+    finally:
+        print("Операция завершена")
+
+divide(10, 2)
+# Вывод:
+# Деление успешно: 5.0
+# Операция завершена
+
+divide(10, 0)
+# Вывод:
+# Ошибка: деление на ноль
+# Операция завершена
+```
+
+### **Полная структура `try-except-else-finally`**
+```python
+try:
+    # Основной код
+    file = open("data.txt", "r")
+    data = file.read()
+    number = int(data)
+except FileNotFoundError:
+    # Если файл не найден
+    print("Файл не существует")
+except ValueError:
+    # Если содержимое не число
+    print("Файл содержит не число")
+else:
+    # Если ошибок не было
+    print(f"Число успешно прочитано: {number}")
+finally:
+    # Выполняется всегда
+    print("Попытка чтения завершена")
+    if 'file' in locals() and file:
+        file.close()
+```
+
+**Порядок выполнения:**
+1. `try` — выполняется основной код
+2. `except` — если возникла ошибка
+3. `else` — если ошибок не было
+4. `finally` — выполняется всегда в конце
+
+## `14.4` Оператор `raise`
+Оператор `raise` используется для **явного вызова исключения**.
+
+**Синтаксис:**
+```python
+raise ExceptionType("Сообщение об ошибке")
+```
+
+### **Базовое использование**
+**Пример 1: Вызов стандартного исключения**
+
+```python
+def set_age(age):
+    if age < 0:
+        raise ValueError("Возраст не может быть отрицательным")
+    if age > 150:
+        raise ValueError("Возраст слишком большой")
+    print(f"Возраст установлен: {age}")
+
+set_age(25)   # Возраст установлен: 25
+set_age(-5)   # ValueError: Возраст не может быть отрицательным
+```
+
+**Пример 2: Проверка типов**
+
+```python
+def calculate_discount(price, discount):
+    if not isinstance(price, (int, float)):
+        raise TypeError("Цена должна быть числом")
+    if not isinstance(discount, (int, float)):
+        raise TypeError("Скидка должна быть числом")
+    if discount < 0 or discount > 100:
+        raise ValueError("Скидка должна быть от 0 до 100")
+    
+    return price * (1 - discount / 100)
+
+print(calculate_discount(1000, 20))  # 800.0
+print(calculate_discount("1000", 20))  # TypeError: Цена должна быть числом
+```
+
+### **Повторный вызов исключения**
+Можно перехватить исключение, обработать его и вызвать снова:
+
+```python
+def process_data(data):
+    try:
+        result = int(data) / 0
+    except ZeroDivisionError as e:
+        print("Логирование: произошла ошибка деления на ноль")
+        raise  # Повторно вызываем то же исключение
+
+try:
+    process_data("10")
+except ZeroDivisionError:
+    print("Обработка ошибки на верхнем уровне")
+
+# Вывод:
+# Логирование: произошла ошибка деления на ноль
+# Обработка ошибки на верхнем уровне
+```
+
+### **Вызов исключения из другого исключения**
+```python
+try:
+    result = int("abc")
+except ValueError as e:
+    raise RuntimeError("Не удалось обработать данные") from e
+
+# RuntimeError: Не удалось обработать данные
+# (связано с ValueError: invalid literal for int() with base 10: 'abc')
+```
+
 ## `14.5` Кастомные ошибки  
+Можно создавать собственные классы исключений для специфичных ошибок в вашем приложении.
+
+**Базовый синтаксис:**
+```python
+class MyCustomError(Exception):
+    pass
+```
+
+### **Простая кастомная ошибка**
+**Пример 1:**
+
+```python
+class NegativeNumberError(Exception):
+    """Исключение для отрицательных чисел"""
+    pass
+
+def square_root(number):
+    if number < 0:
+        raise NegativeNumberError("Нельзя извлечь корень из отрицательного числа")
+    return number ** 0.5
+
+try:
+    print(square_root(16))  # 4.0
+    print(square_root(-9))  # NegativeNumberError
+except NegativeNumberError as e:
+    print(f"Ошибка: {e}")
+```
+
+### **Кастомная ошибка с дополнительными данными**
+**Пример 2:**
+
+```python
+class InsufficientFundsError(Exception):
+    """Исключение при недостатке средств"""
+    
+    def __init__(self, balance, amount):
+        self.balance = balance
+        self.amount = amount
+        self.shortage = amount - balance
+        message = f"Недостаточно средств. Баланс: {balance}, требуется: {amount}"
+        super().__init__(message)
+
+class BankAccount:
+    def __init__(self, balance):
+        self.balance = balance
+    
+    def withdraw(self, amount):
+        if amount > self.balance:
+            raise InsufficientFundsError(self.balance, amount)
+        self.balance -= amount
+        return self.balance
+
+# Использование
+account = BankAccount(1000)
+
+try:
+    account.withdraw(500)   # OK
+    print(f"Баланс: {account.balance}")
+    account.withdraw(800)   # Ошибка
+except InsufficientFundsError as e:
+    print(e)
+    print(f"Не хватает: {e.shortage} рублей")
+
+# Вывод:
+# Баланс: 500
+# Недостаточно средств. Баланс: 500, требуется: 800
+# Не хватает: 300 рублей
+```
+
+### **Иерархия кастомных исключений**
+**Пример 3:**
+
+```python
+class ValidationError(Exception):
+    """Базовое исключение для валидации"""
+    pass
+
+class EmailValidationError(ValidationError):
+    """Ошибка валидации email"""
+    pass
+
+class PasswordValidationError(ValidationError):
+    """Ошибка валидации пароля"""
+    pass
+
+def validate_email(email):
+    if "@" not in email:
+        raise EmailValidationError("Email должен содержать символ @")
+
+def validate_password(password):
+    if len(password) < 8:
+        raise PasswordValidationError("Пароль должен быть не менее 8 символов")
+
+def register_user(email, password):
+    try:
+        validate_email(email)
+        validate_password(password)
+        print("Пользователь зарегистрирован")
+    except ValidationError as e:
+        print(f"Ошибка валидации: {e}")
+
+register_user("user.com", "12345")
+# Вывод: Ошибка валидации: Email должен содержать символ @
+
+register_user("user@mail.com", "12345")
+# Вывод: Ошибка валидации: Пароль должен быть не менее 8 символов
+
+register_user("user@mail.com", "strongpass123")
+# Вывод: Пользователь зарегистрирован
+```
+
+### **Практический пример: API клиент**
+
+```python
+class APIError(Exception):
+    """Базовая ошибка API"""
+    pass
+
+class ConnectionError(APIError):
+    """Ошибка соединения"""
+    pass
+
+class AuthenticationError(APIError):
+    """Ошибка аутентификации"""
+    pass
+
+class RateLimitError(APIError):
+    """Превышен лимит запросов"""
+    
+    def __init__(self, retry_after):
+        self.retry_after = retry_after
+        super().__init__(f"Лимит превышен. Повторите через {retry_after} секунд")
+
+def make_api_request(endpoint, token):
+    # Симуляция API запроса
+    if not token:
+        raise AuthenticationError("Токен не предоставлен")
+    
+    if endpoint == "/rate_limited":
+        raise RateLimitError(retry_after=60)
+    
+    return {"status": "success", "data": "..."}
+
+# Использование
+try:
+    response = make_api_request("/users", token="abc123")
+    print(response)
+except AuthenticationError as e:
+    print(f"Ошибка аутентификации: {e}")
+except RateLimitError as e:
+    print(f"Лимит запросов: {e}")
+    print(f"Ожидание: {e.retry_after} сек")
+except APIError as e:
+    print(f"Ошибка API: {e}")
+```
+
+**Когда создавать кастомные исключения:**
+- Для бизнес-логики приложения
+- Когда стандартные исключения недостаточно информативны
+- Для создания иерархии ошибок в больших проектах
+- Когда нужно передавать дополнительные данные об ошибке
 
 ----
 
@@ -4253,12 +4822,785 @@ print(global_var)    # 20
 
 ----
 
-# `17` Декораторы
-## `17.1` Что такое декоратор? Как написать свой декоратор?  
-## `17.2` Есть ли что-то похожее в других языках?  
-## `17.3` Атрибуты `__name__` & `__doc__`  
-## `17.4` `@functools.wraps` - что такое и зачем?  
-## `17.5` Параметризованный декоратор  
+# `17` (`*`) Декораторы
+[Видео про декораторы](https://youtu.be/VnuDMPQSMjs?si=waVjxvA83EmMDevm)
+
+## `17.1` Что такое декоратор? Как написать свой декоратор?
+### **Что такое декоратор?**
+**Декоратор** — это функция, которая принимает другую функцию и расширяет её поведение без изменения исходного кода. Это паттерн проектирования, который позволяет "обернуть" функцию дополнительной логикой.
+
+**Основные характеристики:**
+- Декоратор — это функция высшего порядка (принимает функцию, возвращает функцию)
+- Используется синтаксис `@decorator_name` перед определением функции
+- Позволяет переиспользовать код
+- Не изменяет исходную функцию
+
+**Для чего нужны декораторы:**
+- Логирование вызовов функций
+- Измерение времени выполнения
+- Проверка прав доступа
+- Кэширование результатов
+- Валидация входных данных
+- Обработка ошибок
+
+### **Базовый пример**
+**Без декоратора:**
+
+```python
+def say_hello():
+    print("Hello!")
+
+def add_greeting(func):
+    def wrapper():
+        print("--- Начало ---")
+        func()
+        print("--- Конец ---")
+    return wrapper
+
+say_hello = add_greeting(say_hello)
+say_hello()
+
+# Вывод:
+# --- Начало ---
+# Hello!
+# --- Конец ---
+```
+
+**С декоратором (синтаксический сахар):**
+```python
+def add_greeting(func):
+    def wrapper():
+        print("--- Начало ---")
+        func()
+        print("--- Конец ---")
+    return wrapper
+
+@add_greeting
+def say_hello():
+    print("Hello!")
+
+say_hello()
+
+# Вывод:
+# --- Начало ---
+# Hello!
+# --- Конец ---
+```
+
+**`@add_greeting`** эквивалентно **`say_hello = add_greeting(say_hello)`**
+
+### **Как написать свой декоратор**
+**Шаблон декоратора:**
+
+```python
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        # Код ДО вызова функции
+        result = func(*args, **kwargs)
+        # Код ПОСЛЕ вызова функции
+        return result
+    return wrapper
+```
+
+### **Пример 1: Декоратор для логирования**
+
+```python
+def logger(func):
+    def wrapper(*args, **kwargs):
+        print(f"Вызов функции: {func.__name__}")
+        print(f"Аргументы: args={args}, kwargs={kwargs}")
+        result = func(*args, **kwargs)
+        print(f"Результат: {result}")
+        return result
+    return wrapper
+
+@logger
+def add(a, b):
+    return a + b
+
+@logger
+def greet(name, greeting="Привет"):
+    return f"{greeting}, {name}!"
+
+add(5, 3)
+# Вывод:
+# Вызов функции: add
+# Аргументы: args=(5, 3), kwargs={}
+# Результат: 8
+
+greet("Алиса", greeting="Здравствуй")
+# Вывод:
+# Вызов функции: greet
+# Аргументы: args=('Алиса',), kwargs={'greeting': 'Здравствуй'}
+# Результат: Здравствуй, Алиса!
+```
+
+### **Пример 2: Декоратор для измерения времени выполнения**
+
+```python
+import time
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"Функция {func.__name__} выполнилась за {end - start:.4f} секунд")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    time.sleep(2)
+    return "Готово"
+
+@timer
+def calculate_sum(n):
+    return sum(range(n))
+
+slow_function()
+# Вывод: Функция slow_function выполнилась за 2.0021 секунд
+
+calculate_sum(1000000)
+# Вывод: Функция calculate_sum выполнилась за 0.0234 секунд
+```
+
+### **Пример 3: Декоратор для проверки типов**
+
+```python
+def validate_positive(func):
+    def wrapper(number):
+        if number <= 0:
+            raise ValueError("Число должно быть положительным")
+        return func(number)
+    return wrapper
+
+@validate_positive
+def calculate_square_root(n):
+    return n ** 0.5
+
+print(calculate_square_root(16))  # 4.0
+print(calculate_square_root(-4))  # ValueError: Число должно быть положительным
+```
+
+### **Множественные декораторы**
+Можно применять несколько декораторов к одной функции:
+
+```python
+@decorator1
+@decorator2
+@decorator3
+def my_function():
+    pass
+
+# Эквивалентно:
+# my_function = decorator1(decorator2(decorator3(my_function)))
+```
+
+**Пример:**
+
+```python
+def uppercase(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result.upper()
+    return wrapper
+
+def add_exclamation(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result + "!!!"
+    return wrapper
+
+@uppercase
+@add_exclamation
+def greet(name):
+    return f"hello, {name}"
+
+print(greet("Alice"))
+# Вывод: HELLO, ALICE!!!
+
+# Порядок выполнения:
+# 1. greet("Alice") → "hello, Alice"
+# 2. add_exclamation → "hello, Alice!!!"
+# 3. uppercase → "HELLO, ALICE!!!"
+```
+
+## `17.2` (`**`) Есть ли что-то похожее в других языках?
+Да, декораторы или похожие паттерны существуют во многих языках программирования. Концепция "обёртывания" функций является универсальной.
+
+### **Java — Аннотации**
+В Java используются **аннотации** — специальные метки, которые добавляют метаданные к коду. Они помечаются символом `@` перед именем класса, метода или поля.
+
+**Примеры использования:**
+- `@Override` — указывает, что метод переопределяет метод родительского класса
+- `@Deprecated` — помечает устаревший код, который не рекомендуется использовать
+- `@Autowired` — в Spring Framework автоматически внедряет зависимости
+- `@GetMapping` — в Spring определяет HTTP GET endpoint для веб-сервиса
+
+**Особенности:**
+- Используются для метаданных, а не для модификации поведения
+- Обрабатываются во время компиляции или выполнения программы
+- Широко применяются в фреймворках (Spring, Hibernate, JUnit)
+- Не изменяют логику напрямую, а указывают как должен работать фреймворк
+
+### **C# — Атрибуты**
+В C# есть **атрибуты** — аналог Java-аннотаций. Они записываются в квадратных скобках перед объявлением класса, метода или свойства.
+
+**Примеры использования:**
+- `[Obsolete]` — помечает устаревший код с предупреждением для разработчика
+- `[HttpGet]` — в ASP.NET определяет HTTP GET метод для API
+- `[Route]` — задаёт URL маршрут для контроллера
+- `[Serializable]` — указывает, что объект можно сериализовать
+
+**Особенности:**
+- Похожи на Java-аннотации по назначению и синтаксису
+- Используются для метаданных и рефлексии
+- Применяются к классам, методам, свойствам, параметрам
+- Фреймворки читают эти атрибуты через рефлексию для настройки поведения
+
+### **TypeScript/JavaScript — Декораторы**
+**TypeScript** поддерживает **декораторы** как экспериментальную функцию — это самая близкая к Python реализация. Используется синтаксис `@decorator` перед объявлением класса или метода.
+
+**JavaScript** не имеет встроенного синтаксиса для декораторов, но широко использует **функции высшего порядка** — функции, которые принимают другие функции и возвращают новые с изменённым поведением. Это тот же принцип, что и в Python, но без синтаксического сахара `@`.
+
+**Особенности TypeScript:**
+- Экспериментальная функция, требует включения в конфигурации
+- Синтаксис максимально похож на Python
+- Используется для модификации классов и методов
+
+**Особенности JavaScript:**
+- Функции высшего порядка — основной способ обёртывания функций
+- Нет специального синтаксиса, используется обычный вызов функций
+- Широко применяется в React (Higher-Order Components)
+
+### **Ruby — Методы-модификаторы**
+В Ruby нет специального синтаксиса для декораторов, но есть мощное **метапрограммирование** и возможность изменять классы во время выполнения.
+
+**Техника "monkey patching":**
+- Можно переопределить любой метод в любом классе
+- Используется `alias_method` для сохранения оригинального метода
+- Затем переопределяется метод с вызовом оригинального внутри
+
+**Особенности:**
+- Очень гибкий подход, но может быть опасным
+- Изменения видны глобально во всей программе
+- Нет явного синтаксиса для декорирования
+- Используется метапрограммирование и динамическая природа языка
+
+### **PHP — Атрибуты**
+Начиная с **PHP 8**, появились **атрибуты** — механизм похожий на Java-аннотации. Используется синтаксис `#[AttributeName]` перед функцией или классом.
+
+**Примеры использования:**
+- `#[Route]` — определяет маршрут для контроллера
+- `#[Deprecated]` — помечает устаревший код
+- Используется в современных фреймворках (Symfony, Laravel)
+
+**Особенности:**
+- Добавлены только в PHP 8 (2020 год)
+- Похожи на Java-аннотации и C#-атрибуты
+- Используются для метаданных, обрабатываются через рефлексию
+
+### **Go — Функции высшего порядка**
+В Go **нет встроенных декораторов** и специального синтаксиса для них. Но язык поддерживает функции как значения первого класса, что позволяет использовать **функции высшего порядка**.
+
+**Подход:**
+- Создаётся функция, которая принимает другую функцию
+- Возвращается новая функция с расширенным поведением
+- Нужно явно присваивать результат переменной
+
+**Особенности:**
+- Нет синтаксического сахара `@decorator`
+- Более многословный подход
+- Явное управление обёртыванием функций
+- Типизация усложняет создание универсальных декораторов
+
+### **Сравнительная таблица**
+| Язык | Синтаксис | Название | Особенности |
+|------|-----------|----------|-------------|
+| **Python** | `@decorator` | Декораторы | Полноценные, модифицируют поведение во время выполнения |
+| **Java** | `@Annotation` | Аннотации | Метаданные, обрабатываются компилятором/runtime |
+| **C#** | `[Attribute]` | Атрибуты | Метаданные, используются через рефлексию |
+| **TypeScript** | `@decorator` | Декораторы | Экспериментальная функция, похожа на Python |
+| **JavaScript** | Функции высшего порядка | - | Нет синтаксического сахара |
+| **Ruby** | `alias_method` | - | Monkey patching, метапрограммирование |
+| **PHP** | `#[Attribute]` | Атрибуты | С PHP 8, похожи на Java |
+| **Go** | Функции высшего порядка | - | Нет встроенного синтаксиса |
+
+
+**Вывод:** 
+Python-декораторы наиболее близки к TypeScript-декораторам по синтаксису и функциональности. Оба языка используют символ `@` и позволяют модифицировать поведение функций напрямую.
+
+Java и C# используют похожую концепцию, но их аннотации/атрибуты больше предназначены для метаданных, которые затем обрабатываются фреймворками, а не для прямого изменения логики.
+
+JavaScript и Go используют функции высшего порядка без специального синтаксиса — это более явный, но менее удобный подход.
+
+Ruby идёт своим путём через метапрограммирование и динамическое изменение классов.
+
+## `17.3` Атрибуты `__name__` & `__doc__`
+Когда функция оборачивается декоратором, она теряет свои метаданные: имя, строку документации и другие атрибуты. Это может создать проблемы при отладке и использовании инструментов рефлексии.
+
+### **Проблема потери метаданных**
+
+```python
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        """Это wrapper функция"""
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def greet(name):
+    """Приветствует пользователя по имени"""
+    return f"Hello, {name}!"
+
+print(greet.__name__)  # wrapper (не greet!)
+print(greet.__doc__)   # Это wrapper функция (не оригинальная документация!)
+```
+
+**Что произошло:**
+- `greet.__name__` показывает `"wrapper"` вместо `"greet"`
+- `greet.__doc__` показывает документацию wrapper'а, а не оригинальной функции
+- Теряется информация об оригинальной функции
+
+### **Атрибуты функций**
+Основные атрибуты функций в Python:
+
+| Атрибут | Описание | Пример |
+|---------|----------|---------|
+| `__name__` | Имя функции | `"greet"` |
+| `__doc__` | Строка документации | `"Приветствует пользователя"` |
+| `__module__` | Модуль, где определена функция | `"__main__"` |
+| `__qualname__` | Квалифицированное имя | `"MyClass.method"` |
+| `__annotations__` | Аннотации типов | `{"name": str, "return": str}` |
+
+**Пример:**
+```python
+def calculate_area(width: float, height: float) -> float:
+    """
+    Вычисляет площадь прямоугольника.
+    
+    Args:
+        width: ширина
+        height: высота
+    
+    Returns:
+        Площадь прямоугольника
+    """
+    return width * height
+
+print(calculate_area.__name__)        # calculate_area
+print(calculate_area.__doc__)         # Вычисляет площадь...
+print(calculate_area.__module__)      # __main__
+print(calculate_area.__annotations__) # {'width': <class 'float'>, ...}
+```
+
+### **Ручное сохранение метаданных**
+Можно вручную копировать атрибуты из оригинальной функции:
+
+```python
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    
+    # Вручную копируем метаданные
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    wrapper.__module__ = func.__module__
+    wrapper.__annotations__ = func.__annotations__
+    
+    return wrapper
+
+@my_decorator
+def greet(name: str) -> str:
+    """Приветствует пользователя"""
+    return f"Hello, {name}!"
+
+print(greet.__name__)  # greet
+print(greet.__doc__)   # Приветствует пользователя
+```
+
+**Проблема:** Это неудобно и легко забыть скопировать все необходимые атрибуты.
+
+
+## `17.4` `@functools.wraps` - что такое и зачем?
+`functools.wraps` — это декоратор для декораторов, который автоматически копирует метаданные из оригинальной функции в wrapper-функцию.
+
+**Зачем нужен:**
+- Сохраняет `__name__`, `__doc__`, `__module__` и другие атрибуты
+- Упрощает написание декораторов
+- Облегчает отладку
+- Корректно работает с инструментами документации
+
+### **Синтаксис**
+```python
+from functools import wraps
+
+def my_decorator(func):
+    @wraps(func)  # ← Сохраняет метаданные оригинальной функции
+    def wrapper(*args, **kwargs):
+        # Дополнительная логика
+        return func(*args, **kwargs)
+    return wrapper
+```
+
+### **Пример: Без `@wraps` vs С `@wraps`**
+**Без `@wraps`:**
+
+```python
+def logger(func):
+    def wrapper(*args, **kwargs):
+        """Wrapper функция для логирования"""
+        print(f"Вызов: {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@logger
+def add(a, b):
+    """Складывает два числа"""
+    return a + b
+
+print(add.__name__)  # wrapper
+print(add.__doc__)   # Wrapper функция для логирования
+help(add)
+# Help on function wrapper in module __main__:
+# wrapper(*args, **kwargs)
+#     Wrapper функция для логирования
+```
+
+**С `@wraps`:**
+
+```python
+from functools import wraps
+
+def logger(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        """Wrapper функция для логирования"""
+        print(f"Вызов: {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@logger
+def add(a, b):
+    """Складывает два числа"""
+    return a + b
+
+print(add.__name__)  # add
+print(add.__doc__)   # Складывает два числа
+help(add)
+# Help on function add in module __main__:
+# add(a, b)
+#     Складывает два числа
+```
+
+### **Практические примеры**
+**Пример 1: Декоратор с `@wraps`**
+
+```python
+from functools import wraps
+import time
+
+def timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} выполнилась за {end - start:.4f}s")
+        return result
+    return wrapper
+
+@timer
+def calculate_fibonacci(n: int) -> int:
+    """Вычисляет n-ое число Фибоначчи"""
+    if n <= 1:
+        return n
+    return calculate_fibonacci(n - 1) + calculate_fibonacci(n - 2)
+
+# Метаданные сохранены
+print(calculate_fibonacci.__name__)  # calculate_fibonacci
+print(calculate_fibonacci.__doc__)   # Вычисляет n-ое число Фибоначчи
+
+calculate_fibonacci(10)
+# calculate_fibonacci выполнилась за 0.0003s
+```
+
+**Пример 2: Декоратор для кэширования**
+
+```python
+from functools import wraps
+
+def cache(func):
+    cached_results = {}
+    
+    @wraps(func)
+    def wrapper(*args):
+        if args not in cached_results:
+            cached_results[args] = func(*args)
+            print(f"Вычислено: {func.__name__}{args}")
+        else:
+            print(f"Из кэша: {func.__name__}{args}")
+        return cached_results[args]
+    
+    return wrapper
+
+@cache
+def expensive_computation(x, y):
+    """Выполняет сложное вычисление"""
+    return x ** y
+
+print(expensive_computation.__name__)  # expensive_computation (не wrapper!)
+
+print(expensive_computation(2, 10))  # Вычислено: expensive_computation(2, 10)
+print(expensive_computation(2, 10))  # Из кэша: expensive_computation(2, 10)
+print(expensive_computation(3, 5))   # Вычислено: expensive_computation(3, 5)
+```
+
+### **Какие атрибуты копирует `@wraps`**
+`functools.wraps` копирует следующие атрибуты:
+- `__module__` — имя модуля
+- `__name__` — имя функции
+- `__qualname__` — квалифицированное имя
+- `__annotations__` — аннотации типов
+- `__doc__` — строка документации
+- `__dict__` — словарь атрибутов функции
+
+**Вывод:** Всегда используйте `@functools.wraps` при написании декораторов!
+
+
+## `17.5` Параметризованный декоратор
+**Параметризованный декоратор** — это декоратор, который принимает аргументы. Это позволяет настраивать поведение декоратора.
+
+### **Структура параметризованного декоратора**
+
+```python
+def decorator_with_params(param1, param2):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Используем param1, param2
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+```
+
+**Три уровня функций:**
+1. **Внешняя функция** — принимает параметры декоратора
+2. **Средняя функция** — принимает декорируемую функцию
+3. **Внутренняя функция (wrapper)** — выполняет саму логику
+
+### **Пример 1: Декоратор с параметром количества повторов**
+
+```python
+from functools import wraps
+
+def repeat(times):
+    """Повторяет выполнение функции заданное количество раз"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for _ in range(times):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator
+
+@repeat(times=3)
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Alice")
+# Вывод:
+# Hello, Alice!
+# Hello, Alice!
+# Hello, Alice!
+
+@repeat(times=5)
+def show_number(n):
+    print(n)
+
+show_number(42)
+# Вывод: 42 (5 раз)
+```
+
+### **Пример 2: Декоратор с проверкой прав доступа**
+
+```python
+from functools import wraps
+
+def requires_permission(permission):
+    """Проверяет наличие прав доступа"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(user, *args, **kwargs):
+            if permission not in user.get("permissions", []):
+                raise PermissionError(f"Требуется право: {permission}")
+            return func(user, *args, **kwargs)
+        return wrapper
+    return decorator
+
+@requires_permission("admin")
+def delete_user(user, user_id):
+    print(f"Пользователь {user_id} удалён")
+
+@requires_permission("read")
+def view_data(user):
+    print("Просмотр данных")
+
+# Использование
+admin_user = {"name": "Alice", "permissions": ["admin", "read", "write"]}
+regular_user = {"name": "Bob", "permissions": ["read"]}
+
+delete_user(admin_user, 123)  # ✓ Пользователь 123 удалён
+delete_user(regular_user, 123)  # ✗ PermissionError: Требуется право: admin
+
+view_data(regular_user)  # ✓ Просмотр данных
+```
+
+### **Пример 3: Декоратор для повторных попыток**
+
+```python
+from functools import wraps
+import time
+import random
+
+def retry(max_attempts=3, delay=1):
+    """Повторяет выполнение функции при ошибке"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            attempts = 0
+            while attempts < max_attempts:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        raise
+                    print(f"Попытка {attempts} неудачна. Повтор через {delay}s...")
+                    time.sleep(delay)
+        return wrapper
+    return decorator
+
+@retry(max_attempts=5, delay=2)
+def unstable_api_call():
+    """Симуляция нестабильного API"""
+    if random.random() < 0.7:  # 70% вероятность ошибки
+        raise ConnectionError("API недоступен")
+    return "Успех!"
+
+result = unstable_api_call()
+print(result)
+# Попытка 1 неудачна. Повтор через 2s...
+# Попытка 2 неудачна. Повтор через 2s...
+# Успех!
+```
+
+### **Пример 4: Декоратор для валидации типов**
+
+```python
+from functools import wraps
+
+def validate_types(**expected_types):
+    """Проверяет типы аргументов функции"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Проверяем kwargs
+            for arg_name, arg_value in kwargs.items():
+                if arg_name in expected_types:
+                    expected_type = expected_types[arg_name]
+                    if not isinstance(arg_value, expected_type):
+                        raise TypeError(
+                            f"Аргумент '{arg_name}' должен быть {expected_type.__name__}, "
+                            f"получен {type(arg_value).__name__}"
+                        )
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@validate_types(name=str, age=int, salary=float)
+def create_user(name, age, salary):
+    print(f"Создан пользователь: {name}, {age} лет, зарплата {salary}")
+
+create_user(name="Alice", age=30, salary=50000.0)  # ✓ OK
+create_user(name="Bob", age="25", salary=60000.0)  # ✗ TypeError
+```
+
+### **Пример 5: Декоратор для логирования с уровнем детализации**
+
+```python
+from functools import wraps
+import logging
+
+def log(level="INFO"):
+    """Логирует вызов функции с заданным уровнем"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            logger = logging.getLogger(func.__module__)
+            log_message = f"Вызов {func.__name__} с args={args}, kwargs={kwargs}"
+            
+            if level == "DEBUG":
+                logger.debug(log_message)
+            elif level == "INFO":
+                logger.info(log_message)
+            elif level == "WARNING":
+                logger.warning(log_message)
+            elif level == "ERROR":
+                logger.error(log_message)
+            
+            result = func(*args, **kwargs)
+            logger.info(f"{func.__name__} вернула: {result}")
+            return result
+        return wrapper
+    return decorator
+
+logging.basicConfig(level=logging.DEBUG)
+
+@log(level="DEBUG")
+def add(a, b):
+    return a + b
+
+@log(level="WARNING")
+def divide(a, b):
+    return a / b
+
+add(5, 3)
+divide(10, 2)
+```
+
+### **Универсальный шаблон**
+
+```python
+from functools import wraps
+
+def my_decorator(param1=default1, param2=default2):
+    """Описание декоратора"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Логика ДО вызова функции
+            # Можно использовать param1, param2
+            
+            result = func(*args, **kwargs)
+            
+            # Логика ПОСЛЕ вызова функции
+            
+            return result
+        return wrapper
+    return decorator
+
+@my_decorator(param1=value1, param2=value2)
+def my_function():
+    pass
+```
+
+**Когда использовать параметризованные декораторы:**
+- Когда нужна гибкая настройка поведения
+- Для переиспользуемых декораторов с разными параметрами
+- Когда один декоратор должен работать по-разному в разных случаях
 
 ----
 
@@ -4271,11 +5613,1507 @@ print(global_var)    # 20
 
 ----
 
-# `19` Type hints
-## `19.1` Что такое и зачем нужны?  
-## `19.2` Что такое динамическая типизация?  
-## `19.3` Модуль `typing`  
-## `19.4` Если есть желание, посмотреть, как было на более старых версиях  
+# `19` (`*`) Type hints
+[Большое видео про Type hints](https://www.youtube.com/watch?v=RwH2UzC2rIo)
+
+## `19.1` Что такое и зачем нужны?
+### **Что такое Type hints?**
+
+**Type hints (аннотации типов)** — это синтаксис Python для указания ожидаемых типов переменных, параметров функций и возвращаемых значений. Это необязательные подсказки, которые не влияют на выполнение кода, но помогают в разработке.
+
+**Основные характеристики:**
+- Добавлены в Python 3.5 (PEP 484)
+- Не обязательны — Python остаётся динамически типизированным
+- Игнорируются интерпретатором Python
+- Проверяются внешними инструментами (mypy, pyright, pyre)
+
+**Синтаксис:**
+
+```python
+# Без type hints
+def greet(name):
+    return f"Hello, {name}!"
+
+# С type hints
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+# Переменные с аннотациями
+age: int = 25
+price: float = 99.99
+items: list[int] = [1, 2, 3]
+```
+
+### **Зачем нужны type hints?**
+**1. Улучшение читаемости кода**
+
+Сразу видно, какие типы данных ожидаются:
+
+```python
+# Непонятно, что принимает и возвращает
+def process(data, config):
+    return data
+
+# Понятно с первого взгляда
+def process(data: dict, config: dict) -> list:
+    return list(data.values())
+```
+
+**2. Раннее обнаружение ошибок**
+
+Статические анализаторы находят ошибки до запуска кода:
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+
+result = add(5, "10")  # mypy найдёт ошибку: str вместо int
+```
+
+**3. Улучшение автодополнения в IDE**
+
+IDE знают типы и предлагают правильные методы:
+
+```python
+def get_user(user_id: int) -> dict:
+    return {"name": "Alice", "age": 30}
+
+user = get_user(123)
+# IDE знает, что user — dict, и предложит .get(), .keys(), .items()
+```
+
+**4. Упрощение рефакторинга**
+
+При изменении типов легко найти все места, где нужны правки:
+
+```python
+# Меняем возвращаемый тип с dict на list
+def get_users(limit: int) -> list:  # было dict
+    return []
+
+# Анализатор покажет все места, где код ожидал dict
+```
+
+**5. Самодокументирование кода**
+
+Не нужно читать весь код функции, чтобы понять интерфейс:
+
+```python
+def calculate_discount(
+    price: float,
+    discount_percent: float,
+    min_price: float = 0.0
+) -> float:
+    """Вычисляет цену со скидкой"""
+    discounted = price * (1 - discount_percent / 100)
+    return max(discounted, min_price)
+```
+
+### **Практические примеры**
+**Пример 1: Функции с type hints**
+
+```python
+def calculate_area(width: float, height: float) -> float:
+    return width * height
+
+def find_user(user_id: int) -> dict | None:
+    """Возвращает пользователя или None"""
+    if user_id in database:
+        return database[user_id]
+    return None
+```
+
+**Пример 2: Класс с type hints**
+
+```python
+class User:
+    def __init__(self, name: str, age: int) -> None:
+        self.name: str = name
+        self.age: int = age
+    
+    def get_info(self) -> str:
+        return f"{self.name}, {self.age} лет"
+    
+    def is_adult(self) -> bool:
+        return self.age >= 18
+```
+
+**Пример 3: Коллекции с типами**
+
+```python
+# Списки, словари, множества
+numbers: list[int] = [1, 2, 3, 4, 5]
+scores: dict[str, int] = {"Alice": 100, "Bob": 95}
+tags: set[str] = {"python", "typing"}
+coordinates: tuple[float, float] = (12.5, 45.3)
+```
+
+### **Важно: Type hints не выполняются во время работы**
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+
+# Python НЕ проверяет типы во время выполнения
+result = add("Hello", "World")  # Код выполнится без ошибок!
+print(result)  # HelloWorld
+
+# Но mypy найдёт ошибку при статическом анализе
+```
+
+### **Когда использовать type hints**
+**✅ Используйте:**
+- В публичных API и библиотеках
+- В больших проектах и командной разработке
+- В сложной бизнес-логике
+- При работе с внешними данными
+
+**❌ Не обязательно:**
+- В небольших скриптах
+- В прототипах и экспериментах
+- Когда типы очевидны из контекста
+
+
+## `19.2` Что такое динамическая типизация?
+### **Динамическая vs Статическая типизация**
+**Динамическая типизация** — это подход, при котором тип переменной определяется во время выполнения программы, а не при компиляции. Python использует динамическую типизацию.
+
+**Статическая типизация** — это подход, при котором типы переменных проверяются на этапе компиляции. Используется в языках как Java, C++, C#, Go.
+
+### **Характеристики динамической типизации**
+**1. Тип определяется во время выполнения**
+
+```python
+# Переменная может менять тип
+x = 5           # x — int
+x = "Hello"     # x теперь str
+x = [1, 2, 3]   # x теперь list
+
+# В статически типизированных языках это ошибка компиляции
+```
+
+**2. Не нужно объявлять типы**
+
+```python
+# Python
+name = "Alice"
+age = 30
+
+# Java требует явное объявление:
+# String name = "Alice";
+# int age = 30;
+```
+
+**3. Проверка типов во время выполнения**
+
+```python
+def divide(a, b):
+    return a / b
+
+divide(10, 2)      # ✓ Работает
+divide("10", "2")  # ✗ TypeError во время выполнения
+```
+
+### **Преимущества динамической типизации**
+**1. Быстрое прототипирование**
+
+Не тратим время на объявление типов:
+
+```python
+users = []
+users.append({"name": "Alice", "age": 30})
+users.append({"name": "Bob", "age": 25})
+
+for user in users:
+    print(user["name"])
+```
+
+**2. Duck Typing ("утиная типизация")**
+
+*"Если это ходит как утка и крякает как утка, то это утка"*
+Важно не ЧТО это за объект, а ЧТО он умеет делать:
+
+```python
+def print_all(items):
+    for item in items:
+        print(item)
+
+# Работает с любым итерируемым объектом
+print_all([1, 2, 3])      # список
+print_all("Hello")        # строка
+print_all(range(5))       # range
+```
+
+**3. Гибкость кода**
+
+Одна функция работает с разными типами:
+
+```python
+def double(value):
+    return value * 2
+
+print(double(5))        # 10 (int)
+print(double("Hi"))     # HiHi (str)
+print(double([1, 2]))   # [1, 2, 1, 2] (list)
+```
+
+### **Недостатки динамической типизации**
+**1. Ошибки обнаруживаются только во время выполнения**
+
+```python
+def calculate(a, b):
+    return a + b
+
+# Ошибка проявится только при запуске
+result = calculate(5, "10")  # TypeError: unsupported operand type(s)
+```
+
+**2. Меньше помощи от IDE**
+
+```python
+def process(data):
+    # IDE не знает методы data
+    return data.method()  # Автодополнение не работает
+```
+
+**3. Сложнее рефакторинг**
+
+```python
+# Изменили возвращаемый тип
+def get_users():
+    return []  # было dict, стало list
+
+# Нужно вручную найти все места использования
+```
+
+### **Сравнение с статической типизацией**
+
+| Характеристика | Динамическая (Python) | Статическая (Java, C++) |
+|----------------|----------------------|------------------------|
+| **Проверка типов** | Во время выполнения | При компиляции |
+| **Объявление типов** | Не требуется | Обязательно |
+| **Скорость разработки** | Быстрая | Медленнее |
+| **Гибкость** | Высокая | Ограниченная |
+| **Обнаружение ошибок** | Во время работы | До запуска |
+| **Рефакторинг** | Сложнее | Проще |
+
+### **Type hints — лучшее из двух миров**
+Type hints позволяют получить преимущества статической типизации, сохраняя гибкость динамической:
+
+```python
+# Динамическая типизация + статический анализ
+def add(a: int, b: int) -> int:
+    return a + b
+
+# Python выполнит код в любом случае
+result = add("Hello", "World")  # Работает во время выполнения
+
+# Но mypy предупредит об ошибке до запуска
+# error: Argument 1 to "add" has incompatible type "str"; expected "int"
+```
+
+**Подход Python:**
+- Код выполняется как обычно (динамическая типизация)
+- Статические анализаторы проверяют типы отдельно (опционально)
+- Разработчик выбирает уровень строгости проверки типов
+
+## `19.3` Модуль `typing`
+Модуль **`typing`** предоставляет расширенные возможности для аннотации типов, которые выходят за рамки базовых типов Python.
+
+**Зачем нужен:**
+- Аннотация сложных структур данных
+- Указание нескольких возможных типов
+- Определение протоколов и callable-объектов
+- Создание типизированных коллекций
+
+### **Базовые типы из `typing`**
+**1. `Optional` — значение или None**
+
+Используется, когда функция может вернуть значение или `None`:
+
+```python
+from typing import Optional
+
+def find_user(user_id: int) -> Optional[dict]:
+    """Возвращает пользователя или None"""
+    if user_id in users_db:
+        return users_db[user_id]
+    return None
+
+# Optional[dict] === dict | None (в Python 3.10+)
+```
+
+**2. `Union` — один из нескольких типов**
+
+Когда параметр может быть разных типов:
+
+```python
+from typing import Union
+
+def process_id(user_id: Union[int, str]) -> str:
+    """Принимает int или str"""
+    return str(user_id)
+
+# В Python 3.10+ можно использовать |
+def process_id(user_id: int | str) -> str:
+    return str(user_id)
+```
+
+**3. `Any` — любой тип**
+
+Отключает проверку типов для конкретного значения:
+
+```python
+from typing import Any
+
+def print_value(value: Any) -> None:
+    """Принимает значение любого типа"""
+    print(value)
+
+# Используйте экономно — это отключает проверку типов!
+```
+
+### **Продвинутые типы**
+
+**4. `Callable` — функции и методы**
+
+Для аннотации функций как параметров:
+
+```python
+from typing import Callable
+
+def execute(
+    func: Callable[[int, int], int],
+    a: int,
+    b: int
+) -> int:
+    """Выполняет функцию, принимающую два int и возвращающую int"""
+    return func(a, b)
+
+def add(x: int, y: int) -> int:
+    return x + y
+
+def multiply(x: int, y: int) -> int:
+    return x * y
+
+result = execute(add, 5, 3)       # 8
+result = execute(multiply, 5, 3)  # 15
+
+# Callable[[arg_types], return_type]
+```
+
+**5. `Literal` — конкретные значения**
+
+Ограничивает значения конкретным набором:
+
+```python
+from typing import Literal
+
+def set_mode(mode: Literal["read", "write", "append"]) -> None:
+    """Принимает только конкретные строки"""
+    print(f"Режим: {mode}")
+
+set_mode("read")    # ✓ OK
+set_mode("write")   # ✓ OK
+set_mode("delete")  # ✗ mypy ошибка
+
+# Полезно для ограничения значений
+Status = Literal["pending", "success", "error"]
+
+def update_status(status: Status) -> None:
+    print(status)
+```
+
+### **Коллекции и последовательности**
+
+**6. `Sequence`, `Iterable`, `Mapping`**
+
+Абстрактные типы для более гибких аннотаций:
+
+```python
+from typing import Sequence, Iterable, Mapping
+
+def print_items(items: Sequence[int]) -> None:
+    """Принимает любую последовательность: list, tuple, range"""
+    for item in items:
+        print(item)
+
+print_items([1, 2, 3])        # list
+print_items((1, 2, 3))        # tuple
+print_items(range(1, 4))      # range
+
+def sum_values(data: Mapping[str, int]) -> int:
+    """Принимает любое отображение: dict, OrderedDict и т.д."""
+    return sum(data.values())
+
+def process_all(items: Iterable[str]) -> None:
+    """Принимает любой итерируемый объект"""
+    for item in items:
+        print(item.upper())
+```
+
+### **Практические примеры**
+**Пример 1: API клиент**
+
+```python
+from typing import Optional, Literal
+
+HttpMethod = Literal["GET", "POST", "PUT", "DELETE"]
+
+class APIClient:
+    def request(
+        self,
+        method: HttpMethod,
+        endpoint: str,
+        data: Optional[dict] = None
+    ) -> dict:
+        """Выполняет HTTP запрос"""
+        response = self._send(method, endpoint, data)
+        return response.json()
+    
+    def get(self, endpoint: str) -> dict:
+        return self.request("GET", endpoint)
+    
+    def post(self, endpoint: str, data: dict) -> dict:
+        return self.request("POST", endpoint, data)
+```
+
+**Пример 2: Callback функции**
+
+```python
+from typing import Callable
+
+def process_data(
+    data: list[int],
+    transformer: Callable[[int], int],
+    filter_func: Callable[[int], bool]
+) -> list[int]:
+    """Применяет трансформацию и фильтрацию к данным"""
+    transformed = [transformer(x) for x in data]
+    return [x for x in transformed if filter_func(x)]
+
+def double(x: int) -> int:
+    return x * 2
+
+def is_even(x: int) -> bool:
+    return x % 2 == 0
+
+numbers = [1, 2, 3, 4, 5]
+result = process_data(numbers, double, is_even)
+print(result)  # [2, 4, 6, 8, 10]
+```
+
+### **Таблица: Когда использовать какой тип**
+
+| Ситуация | Тип | Пример |
+|----------|-----|--------|
+| Значение или None | `Optional[T]` или `T \| None` | `Optional[str]` |
+| Несколько типов | `Union[T1, T2]` или `T1 \| T2` | `int \| str` |
+| Любой тип | `Any` | `Any` |
+| Функция как параметр | `Callable` | `Callable[[int], str]` |
+| Конкретные значения | `Literal` | `Literal["read", "write"]` |
+| Структура словаря | `TypedDict` | `class User(TypedDict): ...` |
+| Duck typing | `Protocol` | `class Drawable(Protocol): ...` |
+| Константы | `Final` | `Final[int] = 100` |
+
+## `19.4` (`**`) Generics
+[Видео про Generics](https://youtu.be/1vtYHS4V1ok?si=zdz5l8v72ejAKgpJ)
+
+**Generics (обобщённые типы)** — это механизм создания функций и классов, которые работают с разными типами данных, сохраняя при этом информацию о конкретном типе.
+
+**Зачем нужны:**
+- Переиспользование кода для разных типов
+- Сохранение информации о типах
+- Безопасность типов без дублирования кода
+
+### **Проблема без Generics**
+
+```python
+# Без generics — теряем информацию о типе
+def get_first(items: list) -> object:
+    return items[0]
+
+numbers = [1, 2, 3]
+first = get_first(numbers)  # first имеет тип object, не int!
+
+# IDE не знает, что first — это int
+# result = first + 5  # mypy не может проверить
+```
+
+### **TypeVar — переменная типа**
+`TypeVar` создаёт переменную типа, которая может принимать любой тип:
+
+```python
+from typing import TypeVar
+
+T = TypeVar('T')
+
+def get_first(items: list[T]) -> T:
+    """Возвращает первый элемент списка любого типа"""
+    return items[0]
+
+# mypy понимает типы!
+numbers: list[int] = [1, 2, 3]
+first_num: int = get_first(numbers)  # T = int
+
+words: list[str] = ["hello", "world"]
+first_word: str = get_first(words)   # T = str
+```
+
+**Как это работает:**
+- `T` — это "заполнитель" для любого типа
+- При вызове функции `T` автоматически заменяется на конкретный тип
+- mypy отслеживает, что возвращаемый тип совпадает с типом элементов списка
+
+### **Базовые примеры с TypeVar**
+**Пример 1: Функция с одним типом**
+
+```python
+from typing import TypeVar
+
+T = TypeVar('T')
+
+def identity(value: T) -> T:
+    """Возвращает то же значение, что получила"""
+    return value
+
+x: int = identity(5)           # T = int
+y: str = identity("hello")     # T = str
+z: list = identity([1, 2, 3])  # T = list
+```
+
+**Пример 2: Функция с двумя параметрами одного типа**
+
+```python
+from typing import TypeVar
+
+T = TypeVar('T')
+
+def swap(a: T, b: T) -> tuple[T, T]:
+    """Меняет местами два значения одного типа"""
+    return (b, a)
+
+x, y = swap(1, 2)           # T = int, result: tuple[int, int]
+a, b = swap("hi", "bye")    # T = str, result: tuple[str, str]
+
+# mypy найдёт ошибку
+# swap(1, "text")  # ✗ Разные типы!
+```
+
+### **Ограничения для TypeVar**
+Можно ограничить `TypeVar` конкретными типами:
+
+```python
+from typing import TypeVar
+
+# T может быть только int или float
+T = TypeVar('T', int, float)
+
+def add(a: T, b: T) -> T:
+    return a + b
+
+add(5, 3)      # ✓ OK, T = int
+add(5.5, 2.3)  # ✓ OK, T = float
+add("a", "b")  # ✗ Ошибка — str не разрешён
+```
+
+**Ограничение базовым классом:**
+
+```python
+from typing import TypeVar
+
+# T должен быть числом (int, float или их подклассы)
+T = TypeVar('T', bound=int | float)
+
+def double(value: T) -> T:
+    return value * 2
+
+double(5)      # ✓ OK
+double(3.14)   # ✓ OK
+double("hi")   # ✗ Ошибка
+```
+
+
+### **Generic классы**
+Создание классов, работающих с любыми типами:
+
+```python
+from typing import Generic, TypeVar
+
+T = TypeVar('T')
+
+class Stack(Generic[T]):
+    """Стек для элементов любого типа"""
+    def __init__(self) -> None:
+        self._items: list[T] = []
+    
+    def push(self, item: T) -> None:
+        self._items.append(item)
+    
+    def pop(self) -> T:
+        return self._items.pop()
+    
+    def is_empty(self) -> bool:
+        return len(self._items) == 0
+
+# Стек целых чисел
+int_stack: Stack[int] = Stack()
+int_stack.push(1)
+int_stack.push(2)
+value: int = int_stack.pop()  # mypy знает, что value — int
+
+# Стек строк
+str_stack: Stack[str] = Stack()
+str_stack.push("hello")
+str_stack.push("world")
+text: str = str_stack.pop()  # mypy знает, что text — str
+
+# mypy найдёт ошибку
+# int_stack.push("text")  # ✗ Нельзя добавить str в Stack[int]
+```
+
+### **Generic с несколькими параметрами**
+
+```python
+from typing import Generic, TypeVar
+
+K = TypeVar('K')  # Key
+V = TypeVar('V')  # Value
+
+class Pair(Generic[K, V]):
+    """Пара ключ-значение"""
+    def __init__(self, key: K, value: V) -> None:
+        self.key = key
+        self.value = value
+    
+    def get_key(self) -> K:
+        return self.key
+    
+    def get_value(self) -> V:
+        return self.value
+
+# Разные комбинации типов
+pair1: Pair[str, int] = Pair("age", 30)
+pair2: Pair[int, str] = Pair(1, "Alice")
+pair3: Pair[str, list[int]] = Pair("numbers", [1, 2, 3])
+
+key: str = pair1.get_key()    # mypy знает, что key — str
+value: int = pair1.get_value()  # mypy знает, что value — int
+```
+
+### **Практический пример: Repository pattern**
+
+```python
+from typing import Generic, TypeVar, Optional
+
+T = TypeVar('T')
+
+class Repository(Generic[T]):
+    """Обобщённый репозиторий для работы с данными"""
+    def __init__(self) -> None:
+        self._data: dict[int, T] = {}
+        self._current_id: int = 0
+    
+    def add(self, item: T) -> int:
+        """Добавляет элемент и возвращает его ID"""
+        self._current_id += 1
+        self._data[self._current_id] = item
+        return self._current_id
+    
+    def get(self, item_id: int) -> Optional[T]:
+        """Получает элемент по ID"""
+        return self._data.get(item_id)
+    
+    def get_all(self) -> list[T]:
+        """Возвращает все элементы"""
+        return list(self._data.values())
+
+# Используем для разных типов
+class User:
+    def __init__(self, name: str, age: int) -> None:
+        self.name = name
+        self.age = age
+
+class Product:
+    def __init__(self, title: str, price: float) -> None:
+        self.title = title
+        self.price = price
+
+# Репозиторий пользователей
+user_repo: Repository[User] = Repository()
+user_id = user_repo.add(User("Alice", 30))
+user = user_repo.get(user_id)  # mypy знает, что user — Optional[User]
+
+# Репозиторий продуктов
+product_repo: Repository[Product] = Repository()
+product_id = product_repo.add(Product("Laptop", 1000.0))
+product = product_repo.get(product_id)  # mypy знает, что product — Optional[Product]
+```
+
+### **Когда использовать Generics**
+
+**✅ Используйте Generics когда:**
+- Пишете контейнеры или коллекции (Stack, Queue, List)
+- Создаёте функции обработки данных, работающие с любыми типами
+- Реализуете паттерны (Repository, Factory, Builder)
+- Нужна типобезопасность без дублирования кода
+
+**❌ Не нужны Generics когда:**
+- Функция всегда работает с конкретным типом
+- Тип не важен для логики (используйте `Any`)
+- Код простой и не будет переиспользоваться
+
+
+## `19.5` (`**`) Ковариантность, контрвариантность и инвариантность
+Эти понятия описывают, как связаны типы при наследовании и как они могут быть заменены друг другом.
+
+**Простыми словами:**
+- **Ковариантность** — можно заменить базовый тип на подтип
+- **Контрвариантность** — можно заменить подтип на базовый тип
+- **Инвариантность** — нельзя заменять типы вообще
+
+### **Базовая иерархия классов**
+
+```python
+class Animal:
+    def speak(self) -> str:
+        return "Some sound"
+
+class Dog(Animal):
+    def speak(self) -> str:
+        return "Woof!"
+
+class Cat(Animal):
+    def speak(self) -> str:
+        return "Meow!"
+```
+
+`Dog` и `Cat` — это **подтипы** `Animal`
+
+
+### **Ковариантность (Covariance)**
+**Определение:** Можно использовать более специфичный тип вместо общего.
+
+**Пример с возвращаемым значением:**
+
+```python
+from typing import Callable
+
+# Функция возвращает Animal
+def get_animal() -> Animal:
+    return Animal()
+
+# Функция возвращает Dog (подтип Animal)
+def get_dog() -> Dog:
+    return Dog()
+
+# ✓ Ковариантность: Dog можно использовать вместо Animal
+animal_getter: Callable[[], Animal] = get_dog  # OK!
+
+# Почему это работает?
+# Если ожидается Animal, то Dog тоже подходит (Dog IS-A Animal)
+```
+
+**Практический пример:**
+
+```python
+def process_animals(animals: list[Animal]) -> None:
+    for animal in animals:
+        print(animal.speak())
+
+# ✗ Это НЕ работает из-за инвариантности list
+dogs: list[Dog] = [Dog(), Dog()]
+# process_animals(dogs)  # Ошибка mypy!
+
+# ✓ Решение: используйте Sequence (ковариантный тип)
+from typing import Sequence
+
+def process_animals_safe(animals: Sequence[Animal]) -> None:
+    for animal in animals:
+        print(animal.speak())
+
+dogs: list[Dog] = [Dog(), Dog()]
+process_animals_safe(dogs)  # ✓ OK!
+```
+
+### **Контрвариантность (Contravariance)**
+**Определение:** Можно использовать более общий тип вместо специфичного (звучит странно, но это про параметры функций).
+
+**Пример с параметрами функции:**
+
+```python
+from typing import Callable
+
+# Функция принимает Animal
+def feed_animal(animal: Animal) -> None:
+    print(f"Feeding: {animal.speak()}")
+
+# Функция принимает Dog (более специфичный тип)
+def feed_dog(dog: Dog) -> None:
+    print(f"Feeding dog: {dog.speak()}")
+
+# ✓ Контрвариантность: функция с Animal может использоваться для Dog
+dog_feeder: Callable[[Dog], None] = feed_animal  # OK!
+
+# Почему это работает?
+# Если функция умеет работать с Animal, она умеет работать и с Dog
+```
+
+**Визуализация:**
+
+```
+Animal (базовый)
+  ↓
+Dog (подтип)
+
+Ковариантность (возвращаемое значение):
+  Animal ← Dog ✓ (Dog можно вместо Animal)
+
+Контрвариантность (параметры):
+  Animal → Dog ✓ (Animal можно вместо Dog)
+```
+
+### **Инвариантность (Invariance)**
+**Определение:** Тип должен совпадать точно, замены не допускаются.
+
+**Пример:**
+
+```python
+# list, dict, set — инвариантные типы
+
+def add_animal(animals: list[Animal]) -> None:
+    animals.append(Animal())
+
+dogs: list[Dog] = [Dog(), Dog()]
+# add_animal(dogs)  # ✗ Ошибка mypy!
+
+# Почему это ошибка?
+# Если бы это работало, мы бы добавили Animal в список Dog!
+# dogs = [Dog(), Dog(), Animal()]  # Теперь в списке Dog есть просто Animal!
+```
+
+**Проблема с инвариантностью:**
+
+```python
+# Если бы list был ковариантным (это НЕ так!)
+dogs: list[Dog] = [Dog()]
+animals: list[Animal] = dogs  # Представим, что это OK
+
+# Теперь можем добавить Cat в список Dog!
+animals.append(Cat())  # Это был бы список Dog, но мы добавили Cat!
+
+# dogs теперь содержит Cat! Это нарушает типобезопасность
+```
+
+
+### **TypeVar с вариантностью**
+
+```python
+from typing import TypeVar
+
+# Инвариантный (по умолчанию)
+T = TypeVar('T')
+
+# Ковариантный — для возвращаемых значений
+T_co = TypeVar('T_co', covariant=True)
+
+# Контрвариантный — для параметров
+T_contra = TypeVar('T_contra', contravariant=True)
+```
+
+**Пример с ковариантностью:**
+
+```python
+from typing import TypeVar, Generic
+
+T_co = TypeVar('T_co', covariant=True)
+
+class Box(Generic[T_co]):
+    """Контейнер только для чтения (ковариантный)"""
+    def __init__(self, item: T_co) -> None:
+        self._item = item
+    
+    def get(self) -> T_co:
+        return self._item
+
+# ✓ Ковариантность работает
+dog_box: Box[Dog] = Box(Dog())
+animal_box: Box[Animal] = dog_box  # OK! Dog -> Animal
+```
+
+**Пример с контрвариантностью:**
+
+```python
+from typing import TypeVar, Generic
+
+T_contra = TypeVar('T_contra', contravariant=True)
+
+class Handler(Generic[T_contra]):
+    """Обработчик (контрвариантный)"""
+    def handle(self, item: T_contra) -> None:
+        print(f"Handling: {item}")
+
+# ✓ Контрвариантность работает
+animal_handler: Handler[Animal] = Handler()
+dog_handler: Handler[Dog] = animal_handler  # OK! Animal -> Dog
+```
+
+### **Практическая таблица**
+
+| Вариантность | Когда использовать | Пример | Замена |
+|--------------|-------------------|--------|--------|
+| **Ковариантность** | Только чтение (возвращаемые значения) | `Sequence[T]`, `Iterable[T]` | `Dog` → `Animal` ✓ |
+| **Контрвариантность** | Только запись (параметры функций) | Редко используется | `Animal` → `Dog` ✓ |
+| **Инвариантность** | Чтение и запись | `list[T]`, `dict[K,V]` | Замена запрещена ✗ |
+
+
+### **Практический совет**
+
+**Для 99% случаев запомните:**
+1. **Возвращаемые значения** — ковариантны (подтип вместо базового ✓)
+2. **Параметры функций** — контрвариантны (базовый вместо подтипа ✓)
+3. **Изменяемые коллекции** (`list`, `dict`) — инвариантны (точное совпадение)
+4. **Неизменяемые коллекции** (`Sequence`, `Iterable`) — ковариантны
+
+**Когда в сомнениях:**
+- Используйте `Sequence[T]` вместо `list[T]` для параметров функций
+- Используйте `Iterable[T]` для максимальной гибкости
+- Не беспокойтесь о вариантности в простых случаях — mypy подскажет, если что-то не так!
+
+
+## `19.4` Совместимость с другими версиями
+`Type hints` эволюционировали с каждой версией Python, добавляя новые возможности и упрощая синтаксис. Важно понимать, какие фичи доступны в разных версиях.
+
+### **История развития type hints**
+
+| Версия | Год | Основные изменения |
+|--------|-----|-------------------|
+| **Python 3.5** | 2015 | Первое появление type hints (PEP 484), модуль `typing` |
+| **Python 3.6** | 2016 | Аннотации переменных, `typing.NamedTuple` |
+| **Python 3.7** | 2018 | `from __future__ import annotations`, улучшения `dataclass` |
+| **Python 3.8** | 2019 | `Literal`, `Final`, `TypedDict`, `Protocol` |
+| **Python 3.9** | 2020 | Встроенные дженерики (`list[int]` вместо `List[int]`) |
+| **Python 3.10** | 2021 | Union types с `|` оператором (`int | str`) |
+| **Python 3.11** | 2022 | `Self` тип, улучшения производительности |
+| **Python 3.12** | 2023 | Синтаксис для дженериков, улучшенная поддержка типов |
+
+
+### **Python 3.5-3.8: Старый синтаксис**
+**Нужно импортировать типы из `typing`:**
+
+```python
+from typing import List, Dict, Set, Tuple, Optional, Union
+
+# Коллекции
+numbers: List[int] = [1, 2, 3]
+scores: Dict[str, int] = {"Alice": 100}
+tags: Set[str] = {"python"}
+coords: Tuple[float, float] = (10.5, 20.3)
+
+# Опциональные типы
+def find_user(user_id: int) -> Optional[Dict]:
+    pass
+
+# Union типы
+def process(value: Union[int, str]) -> str:
+    return str(value)
+```
+
+### **Python 3.9+: Упрощённый синтаксис**
+**Можно использовать встроенные типы напрямую:**
+
+```python
+# Не нужен импорт из typing!
+numbers: list[int] = [1, 2, 3]
+scores: dict[str, int] = {"Alice": 100}
+tags: set[str] = {"python"}
+coords: tuple[float, float] = (10.5, 20.3)
+
+# Optional всё ещё нужен из typing
+from typing import Optional
+def find_user(user_id: int) -> Optional[dict]:
+    pass
+
+# Но Union можно заменить на |
+def process(value: int | str) -> str:
+    return str(value)
+```
+
+### **Python 3.10+: Оператор `|` для Union**
+**Новый способ указания нескольких типов:**
+
+```python
+# Старый способ (работает везде)
+from typing import Union, Optional
+def process(value: Union[int, str, float]) -> Union[str, None]:
+    pass
+
+# Новый способ (Python 3.10+)
+def process(value: int | str | float) -> str | None:
+    pass
+
+# Optional[T] теперь можно писать как T | None
+def find_user(user_id: int) -> dict | None:
+    pass
+```
+
+### **Обратная совместимость: `from __future__ import annotations`**
+Если нужно использовать новый синтаксис в старых версиях Python:
+
+```python
+from __future__ import annotations
+
+# Теперь работает в Python 3.7+
+def get_items() -> list[int]:
+    return [1, 2, 3]
+
+def process(value: int | str) -> str:
+    return str(value)
+```
+
+**Как это работает:**
+- Аннотации становятся строками и не вычисляются во время импорта
+- Позволяет использовать синтаксис из новых версий
+- Анализаторы типов всё равно понимают аннотации
+
+**Ограничения:**
+- Не работает для `isinstance()` и `issubclass()` проверок
+- Добавляет небольшой overhead при использовании рефлексии
+
+### **Таблица совместимости**
+| Фича | Python 3.5-3.8 | Python 3.9+ | Python 3.10+ |
+|------|---------------|-------------|--------------|
+| Базовые аннотации | ✅ | ✅ | ✅ |
+| `typing.List[int]` | ✅ | ✅ (устарел) | ✅ (устарел) |
+| `list[int]` | ❌ | ✅ | ✅ |
+| `Union[int, str]` | ✅ | ✅ | ✅ (устарел) |
+| `int \| str` | ❌ | ❌ | ✅ |
+| `Optional[int]` | ✅ | ✅ | ✅ |
+| `int \| None` | ❌ | ❌ | ✅ |
+| `TypedDict` | ✅ (3.8+) | ✅ | ✅ |
+| `Protocol` | ✅ (3.8+) | ✅ | ✅
+| `Literal` | ✅ (3.8+) | ✅ | ✅ |
+| `Final` | ✅ (3.8+) | ✅ | ✅ |
+| `Self` | ❌ | ❌ | ✅ (3.11+) |
+
+
+### **Рекомендации по использованию**
+**Если вы пишете для Python 3.9+:**
+
+```python
+# ✅ Используйте встроенные типы
+numbers: list[int] = [1, 2, 3]
+user: dict[str, str] = {"name": "Alice"}
+
+# ✅ Используйте | для Union в Python 3.10+
+def process(value: int | str | None) -> str:
+    return str(value) if value else ""
+
+# ✅ Optional можно заменить на T | None
+def find_item(item_id: int) -> dict | None:
+    pass
+```
+
+**Если нужна поддержка Python 3.7-3.8:**
+```python
+from __future__ import annotations
+from typing import Optional, Union
+
+# Теперь работает новый синтаксис
+def get_users() -> list[dict[str, int]]:
+    return [{"age": 30}]
+
+# Но для Union и Optional всё равно нужен typing
+def process(value: Union[int, str]) -> Optional[str]:
+    pass
+```
+
+**Если нужна поддержка Python 3.5-3.6:**
+```python
+from typing import List, Dict, Optional, Union
+
+# Старый синтаксис
+def get_users() -> List[Dict[str, int]]:
+    return [{"age": 30}]
+
+def process(value: Union[int, str]) -> Optional[str]:
+    pass
+```
+
+### **Forward References (Отложенные аннотации)**
+Проблема возникает, когда тип ещё не определён:
+
+```python
+# ❌ Ошибка: User ещё не определён
+class User:
+    def get_friend(self) -> User:
+        pass
+
+# ✅ Решение 1: Строковая аннотация
+class User:
+    def get_friend(self) -> "User":
+        pass
+
+# ✅ Решение 2: from __future__ import annotations
+from __future__ import annotations
+
+class User:
+    def get_friend(self) -> User:
+        pass
+```
+
+**Пример с циклическими зависимостями:**
+```python
+from __future__ import annotations
+from typing import Optional
+
+class TreeNode:
+    def __init__(self, value: int) -> None:
+        self.value: int = value
+        self.left: Optional[TreeNode] = None
+        self.right: Optional[TreeNode] = None
+    
+    def add_left(self, node: TreeNode) -> TreeNode:
+        self.left = node
+        return self
+    
+    def add_right(self, node: TreeNode) -> TreeNode:
+        self.right = node
+        return self
+```
+
+### **Проверка типов в runtime**
+Type hints **не проверяются** Python во время выполнения, но есть инструменты для runtime-проверки:
+
+**1. Использование `isinstance()` — не работает с типами из `typing`:**
+
+```python
+from typing import List
+
+numbers: List[int] = [1, 2, 3]
+
+# ❌ Не работает
+isinstance(numbers, List[int])  # TypeError
+
+# ✅ Работает только для базового типа
+isinstance(numbers, list)  # True
+```
+
+**2. Библиотека `typeguard` для runtime-проверки:**
+
+```python
+from typeguard import typechecked
+
+@typechecked
+def add(a: int, b: int) -> int:
+    return a + b
+
+add(5, 3)      # ✓ OK
+add(5, "3")    # ✗ TypeError во время выполнения
+```
+
+**3. Библиотека `pydantic` для валидации данных:**
+
+```python
+from pydantic import BaseModel
+
+class User(BaseModel):
+    name: str
+    age: int
+    email: str
+
+# ✓ Валидация успешна
+user = User(name="Alice", age=30, email="alice@mail.com")
+
+# ✗ ValidationError — age должен быть int
+user = User(name="Bob", age="25", email="bob@mail.com")
+```
+
+### **Статические анализаторы типов**
+Для проверки типов используются внешние инструменты:
+
+**1. mypy — самый популярный**
+
+```bash
+# Установка
+pip install mypy
+
+# Проверка файла
+mypy script.py
+
+# Проверка проекта
+mypy .
+```
+
+**Пример использования:**
+
+```python
+# script.py
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+result = greet(123)  # Ошибка типа
+```
+
+```bash
+$ mypy script.py
+script.py:4: error: Argument 1 to "greet" has incompatible type "int"; expected "str"
+```
+
+**2. pyright — от Microsoft**
+
+```bash
+# Установка
+pip install pyright
+
+# Проверка
+pyright script.py
+```
+
+**3. pyre — от Facebook/Meta**
+
+```bash
+# Установка
+pip install pyre-check
+
+# Проверка
+pyre check
+```
+
+**4. pytype — от Google**
+
+```bash
+# Установка
+pip install pytype
+
+# Проверка
+pytype script.py
+```
+
+### **Настройка mypy**
+Создайте файл `mypy.ini` или `pyproject.toml`:
+
+**mypy.ini:**
+
+```ini
+[mypy]
+python_version = 3.10
+warn_return_any = True
+warn_unused_configs = True
+disallow_untyped_defs = True
+disallow_any_generics = True
+check_untyped_defs = True
+no_implicit_optional = True
+warn_redundant_casts = True
+warn_unused_ignores = True
+warn_no_return = True
+strict = False
+
+# Игнорировать определённые модули
+[mypy-some_library.*]
+ignore_missing_imports = True
+```
+
+**pyproject.toml:**
+
+```toml
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+```
+
+### **Игнорирование ошибок типов**
+Иногда нужно отключить проверку для конкретной строки:
+
+```python
+# Игнорировать ошибку на этой строке
+result = some_function()  # type: ignore
+
+# Игнорировать конкретный тип ошибки
+result = some_function()  # type: ignore[arg-type]
+
+# Игнорировать весь файл
+# mypy: ignore-errors
+```
+
+**Когда использовать `type: ignore`:**
+- При работе с библиотеками без type hints
+- Для legacy кода
+- Когда mypy ошибается (редко)
+- В тестах с mock-объектами
+
+### **Миграция проекта на type hints**
+**Шаг 1: Установите mypy**
+
+```bash
+pip install mypy
+```
+
+**Шаг 2: Запустите проверку**
+
+```bash
+mypy . --ignore-missing-imports
+```
+
+**Шаг 3: Добавляйте аннотации постепенно**
+
+Начните с публичных API:
+
+```python
+# До
+def calculate_discount(price, percent):
+    return price * (1 - percent / 100)
+
+# После
+def calculate_discount(price: float, percent: float) -> float:
+    return price * (1 - percent / 100)
+```
+
+**Шаг 4: Используйте `# type: ignore` временно**
+
+Для legacy кода, который сложно типизировать:
+
+```python
+def legacy_function(data):  # type: ignore
+    # Сложная логика без типов
+    pass
+```
+
+**Шаг 5: Настройте строгость постепенно**
+
+```ini
+# mypy.ini — начните с мягких настроек
+[mypy]
+warn_return_any = True
+warn_unused_configs = True
+
+# Постепенно добавляйте строгость
+disallow_untyped_defs = True
+strict = True
+```
+
+### **Практические примеры совместимости**
+**Пример 1: Универсальный код для разных версий**
+
+```python
+from __future__ import annotations
+from typing import Optional, List, Dict, Union
+import sys
+
+# Проверка версии Python
+if sys.version_info >= (3, 10):
+    # Python 3.10+ — используем | оператор
+    def process(value: int | str | None) -> str | None:
+        return str(value) if value else None
+else:
+    # Старые версии — используем Union
+    def process(value: Union[int, str, None]) -> Optional[str]:
+        return str(value) if value else None
+```
+
+**Пример 2: Совместимость с TypedDict**
+
+```python
+from typing import TypedDict
+
+# Python 3.8+
+class User(TypedDict):
+    name: str
+    age: int
+
+# Для Python 3.7 используйте альтернативный синтаксис
+User = TypedDict('User', {
+    'name': str,
+    'age': int
+})
+```
+
+**Пример 3: Совместимость с Protocol**
+
+```python
+from typing import Protocol
+
+# Python 3.8+
+class Drawable(Protocol):
+    def draw(self) -> None: ...
+
+# Для Python 3.7 используйте typing_extensions
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -> None: ...
+```
+
+
+### **Библиотека `typing_extensions`**
+Для использования новых фич в старых версиях Python:
+
+```bash
+pip install typing_extensions
+```
+
+```python
+from typing_extensions import (
+    Literal,      # Доступен в 3.8+, но можно использовать в 3.7
+    TypedDict,    # Доступен в 3.8+, но можно использовать в 3.7
+    Protocol,     # Доступен в 3.8+, но можно использовать в 3.7
+    Final,        # Доступен в 3.8+, но можно использовать в 3.7
+    Self,         # Доступен в 3.11+, но можно использовать раньше
+)
+
+# Теперь работает в Python 3.7
+Mode = Literal["read", "write", "append"]
+
+def open_file(filename: str, mode: Mode) -> None:
+    pass
+```
+
+### **Выводы и best practices**
+**✅ Рекомендации:**
+1. **Используйте type hints в новом коде** — это улучшает читаемость и помогает найти ошибки
+2. **Начинайте с публичного API** — функции, классы, методы, которые используют другие разработчики
+3. **Используйте современный синтаксис** — если проект на Python 3.9+, используйте `list[int]` вместо `List[int]`
+4. **Проверяйте типы с mypy** — добавьте проверку в CI/CD pipeline
+5. **Не переусердствуйте** — не нужно типизировать каждую переменную в скриптах
+6. **Используйте `from __future__ import annotations`** — для совместимости и производительности
+
+**❌ Чего избегать:**
+1. Не используйте `Any` без необходимости — это отключает проверку типов
+2. Не игнорируйте все ошибки mypy — используйте `type: ignore` точечно
+3. Не используйте устаревший синтаксис в новых проектах — `List[int]` вместо `list[int]`
+4. Не проверяйте типы во runtime без необходимости — это замедляет код
+
+**Итоговая таблица: Какой синтаксис использовать**
+| Версия Python | Рекомендуемый синтаксис |
+|---------------|------------------------|
+| **3.5-3.6** | `from typing import List, Dict`<br>`List[int]`, `Dict[str, int]` |
+| **3.7-3.8** | `from __future__ import annotations`<br>`list[int]`, `dict[str, int]` |
+| **3.9** | `list[int]`, `dict[str, int]`<br>`Union[int, str]` для множественных типов |
+| **3.10+** | `list[int]`, `dict[str, int]`<br>`int \| str` для множественных типов |
+| **3.11+** | Современный синтаксис + `Self` для методов классов |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ----
 
