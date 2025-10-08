@@ -9396,19 +9396,1171 @@ for animal in animals:  # Полиморфизм
 ----
 
 # `25` Методы экземпляра класса
-## `25.1` Метод `__init__` — конструктор класса  
-## `25.2` Параметр `self` — что это и зачем нужен  
+## `25.1` Метод `__init__` — конструктор класса
+**Теория:**
+`__init__` — это специальный метод (конструктор), который автоматически вызывается при создании нового объекта класса. Он нужен для инициализации — задания начальных значений атрибутам объекта. Без `__init__` каждый объект создавался бы "пустым", и пришлось бы вручную добавлять атрибуты после создания.
+
+**Примеры:**
+
+```python
+# Пример 1: Простой класс с __init__
+class Dog:
+    def __init__(self, name, age):
+        self.name = name  # Сохраняем имя собаки
+        self.age = age    # Сохраняем возраст
+
+# Создаём объекты
+dog1 = Dog("Бобик", 3)  # __init__ вызывается автоматически
+dog2 = Dog("Рекс", 5)
+
+print(dog1.name)  # Бобик
+print(dog2.age)   # 5
+```
+
+```python
+# Пример 2: __init__ с параметрами по умолчанию
+class Book:
+    def __init__(self, title, pages=100):
+        self.title = title
+        self.pages = pages
+        self.is_read = False  # Можно задавать значения без параметров
+
+book1 = Book("Война и мир", 1300)
+book2 = Book("Рассказ")  # pages будет 100 по умолчанию
+
+print(book2.pages)    # 100
+print(book1.is_read)  # False
+```
+
+## `25.2` Параметр `self` — что это и зачем нужен
+**Теория:**
+`self` — это ссылка на конкретный экземпляр класса (объект). Когда вы вызываете метод на объекте, Python автоматически передаёт этот объект первым параметром. `self` позволяет методам обращаться к атрибутам и другим методам именно этого объекта.
+
+**Важно:** имя `self` — это соглашение, технически можно использовать любое имя, но все программисты используют именно `self`.
+
+**Примеры:**
+
+```python
+# Пример 1: self даёт доступ к атрибутам объекта
+class Counter:
+    def __init__(self, start):
+        self.value = start  # self.value — атрибут конкретного объекта
+    
+    def increment(self):
+        self.value += 1  # Обращаемся к атрибуту через self
+
+counter1 = Counter(0)
+counter2 = Counter(100)
+
+counter1.increment()  # Python автоматически передаёт counter1 как self
+counter2.increment()
+
+print(counter1.value)  # 1
+print(counter2.value)  # 101 — каждый объект независим!
+```
+
+```python
+# Пример 2: self для вызова других методов
+class Calculator:
+    def __init__(self, value):
+        self.value = value
+    
+    def add(self, number):
+        self.value += number
+    
+    def double(self):
+        self.add(self.value)  # Вызываем другой метод через self
+    
+calc = Calculator(5)
+calc.double()  # Внутри вызовется self.add(5)
+print(calc.value)  # 10
+```
+
+**Почему self обязателен:**
+Без `self` Python не поймёт, к какому конкретно объекту относятся атрибуты — к `dog1` или `dog2`, к `counter1` или `counter2`. `self` — это способ сказать: "работай с ЭТИМ конкретным объектом".
 
 ----
 
-# `26` Доступ к атрибутам
-## `26.1` Сокрытие данных (инкапсуляция) в Python  
-## `26.2` Соглашения между разработчиками по именованию и доступу  
-## `26.3` Геттеры, сеттеры, делитеры — что это и зачем нужны  
-## `26.4` Свойство (`property`) — атрибут с управляемым доступом  
-## `26.5` Декоратор `@property` — как работает и зачем  
-## `26.6` Декораторы `@classmethod` и `@staticmethod` — что такое `cls` и различия  
-## `26.7` Продвинутое: `@singledispatchmethod` — перегрузка методов по типу аргумента  
+# `26` (`*`) Доступ к атрибутам
+## `26.1` Сокрытие данных (инкапсуляция) в Python
+**Теория:**
+`Инкапсуляция` — это один из принципов ООП, который означает "упаковку" данных и методов внутри класса, а также ограничение прямого доступа к внутренним данным объекта. Идея в том, что внутреннее устройство объекта должно быть скрыто, а взаимодействие с ним происходит через публичные методы.
+
+**Зачем это нужно:**
+- **Защита данных** — предотвращение случайного изменения важных атрибутов
+- **Контроль** — возможность проверять значения перед записью
+- **Гибкость** — можно менять внутреннюю реализацию без изменения внешнего интерфейса
+- **Логика** — можно добавить вычисления при получении/установке значений
+
+**Важно:** В Python нет настоящего сокрытия данных, как в Java или C++. Все атрибуты технически доступны. Python следует философии "мы все взрослые люди" — доверие программисту вместо жёстких ограничений.
+
+**Примеры:**
+
+```python
+# Пример 1: Проблема без инкапсуляции
+class BankAccount:
+    def __init__(self, balance):
+        self.balance = balance
+
+account = BankAccount(1000)
+account.balance = -5000  # Можем установить отрицательный баланс — это плохо!
+print(account.balance)  # -5000
+```
+
+```python
+# Пример 2: Решение с методами (базовая инкапсуляция)
+class BankAccount:
+    def __init__(self, balance):
+        self._balance = balance  # _ указывает: "это внутренний атрибут"
+    
+    def get_balance(self):
+        return self._balance
+    
+    def deposit(self, amount):
+        if amount > 0:
+            self._balance += amount
+        else:
+            print("Сумма должна быть положительной")
+    
+    def withdraw(self, amount):
+        if 0 < amount <= self._balance:
+            self._balance -= amount
+        else:
+            print("Недостаточно средств или неверная сумма")
+
+account = BankAccount(1000)
+account.deposit(500)
+print(account.get_balance())  # 1500
+account.withdraw(2000)  # Недостаточно средств или неверная сумма
+# Технически всё ещё можно: account._balance = -5000, но это нарушает соглашение
+```
+
+
+## `26.2` Соглашения между разработчиками по именованию и доступу
+**Теория:**
+В Python используются соглашения об именовании для обозначения уровня доступа к атрибутам и методам. Это не строгие правила, а договорённость между программистами.
+
+**Три уровня доступа:**
+
+1. **Публичные атрибуты** (`name`) — обычные атрибуты, доступны везде
+2. **Защищённые атрибуты** (`_name`) — один символ подчёркивания в начале
+3. **Приватные атрибуты** (`__name`) — два символа подчёркивания в начале
+
+**Примеры:**
+
+```python
+# Пример 1: Разные уровни доступа
+class Person:
+    def __init__(self, name, age, passport):
+        self.name = name           # Публичный — можно свободно использовать
+        self._age = age            # Защищённый — используй осторожно
+        self.__passport = passport # Приватный — не трогай снаружи!
+    
+    def get_info(self):
+        return f"{self.name}, {self._age} лет"
+    
+    def _internal_check(self):
+        # Защищённый метод для внутреннего использования
+        return self.__passport is not None
+
+person = Person("Иван", 30, "1234567890")
+
+# Публичный доступ — нормально
+print(person.name)  # Иван
+
+# Защищённый — работает, но намекает "будь осторожен"
+print(person._age)  # 30
+
+# Приватный — вызовет ошибку
+print(person.__passport)  # AttributeError!
+```
+
+```python
+# Пример 2: Name mangling — механизм приватности
+class Secret:
+    def __init__(self):
+        self.__hidden = "секрет"
+    
+    def reveal(self):
+        return self.__hidden
+
+obj = Secret()
+# print(obj.__hidden)  # AttributeError
+
+# Но на самом деле атрибут доступен через name mangling:
+print(obj._Secret__hidden)  # секрет
+# Python переименовал __hidden в _Secret__hidden
+```
+
+**Соглашения:**
+- `_name` — "Это внутренний атрибут, используй, только если знаешь что делаешь"
+- `__name` — "Это точно не для внешнего использования" (name mangling для избежания конфликтов в наследовании)
+- `name_` — для избежания конфликтов с ключевыми словами (например, `class_`)
+- `__name__` — специальные методы Python (dunder methods)
+
+
+## `26.3` Геттеры, сеттеры, делитеры — что это и зачем нужны
+**Теория:**
+Геттеры, сеттеры и делитеры — это специальные методы для управления доступом к атрибутам объекта:
+
+- **Геттер (getter)** — метод для **получения** значения атрибута
+- **Сеттер (setter)** — метод для **установки** значения атрибута с валидацией
+- **Делитер (deleter)** — метод для **удаления** атрибута
+
+Этот паттерн пришёл из языков вроде Java и C++, где прямой доступ к полям класса считается плохой практикой
+
+**Зачем нужны:**
+- Валидация данных при установке
+- Вычисления при получении (динамические атрибуты)
+- Преобразование и нормализация данных
+- Логирование обращений к атрибутам
+- Защита от некорректных значений
+- Побочные эффекты (например, обновление связанных данных)
+
+**Примеры:**
+
+```python
+# Пример 1: Классические геттеры и сеттеры (старый стиль)
+class Temperature:
+    def __init__(self, celsius):
+        self._celsius = celsius
+    
+    def get_celsius(self):  # Геттер
+        return self._celsius
+    
+    def set_celsius(self, value):  # Сеттер
+        if value < -273.15:
+            raise ValueError("Температура не может быть ниже абсолютного нуля")
+        self._celsius = value
+    
+    def del_celsius(self):  # Делитер
+        print("Удаление температуры")
+        del self._celsius
+
+temp = Temperature(25)
+print(temp.get_celsius())  # 25
+temp.set_celsius(30)
+print(temp.get_celsius())  # 30
+# temp.set_celsius(-300)  # ValueError!
+```
+
+```python
+# Пример 2: Геттер с вычислениями
+class Rectangle:
+    def __init__(self, width, height):
+        self._width = width
+        self._height = height
+    
+    def get_area(self):  # Геттер для вычисляемого свойства
+        return self._width * self._height
+    
+    def set_width(self, value):
+        if value <= 0:
+            raise ValueError("Ширина должна быть положительной")
+        self._width = value
+
+rect = Rectangle(5, 10)
+print(rect.get_area())  # 50
+rect.set_width(8)
+print(rect.get_area())  # 80 (автоматически пересчиталось)
+```
+
+```python
+# Пример 3: Преобразование данных
+class Person:
+    def __init__(self, name, email):
+        self._name = name
+        self._email = email
+    
+    def get_name(self):
+        """Возвращаем имя с заглавной буквы"""
+        return self._name.title()
+    
+    def set_name(self, value):
+        """Сохраняем имя, убрав лишние пробелы"""
+        if not value.strip():
+            raise ValueError("Имя не может быть пустым")
+        self._name = value.strip()
+    
+    def get_email(self):
+        """Возвращаем email в нижнем регистре"""
+        return self._email.lower()
+
+person = Person("  иВаН  ", "Ivan@EXAMPLE.COM")
+print(person.get_name())   # Иван
+print(person.get_email())  # ivan@example.com
+```
+
+```python
+# Пример 4: Побочные эффекты — логирование изменений
+class BankAccount:
+    def __init__(self, balance):
+        self._balance = balance
+        self._transaction_count = 0
+    
+    def get_balance(self):
+        return self._balance
+    
+    def set_balance(self, amount):
+        if amount < 0:
+            raise ValueError("Баланс не может быть отрицательным")
+        
+        old_balance = self._balance
+        self._balance = amount
+        self._transaction_count += 1
+        print(f"Транзакция #{self._transaction_count}: {old_balance} → {amount}")
+
+account = BankAccount(1000)
+account.set_balance(1500)  # Транзакция #1: 1000 → 1500
+account.set_balance(1200)  # Транзакция #2: 1500 → 1200
+```
+
+**Проблема старого стиля:**
+Код выглядит громоздко: `temp.get_celsius()` и `temp.set_celsius(30)` вместо простого `temp.celsius` и `temp.celsius = 30`. Приходится писать много дополнительного кода, и синтаксис становится менее естественным для Python
+
+**Решение — `property`:**
+Python предлагает более элегантное решение через `property`, который позволяет использовать синтаксис обычных атрибутов с контролем доступа под капотом. Современный Python почти не использует явные `get_`/`set_` методы — вместо этого применяется декоратор `@property`
+
+
+## `26.4` Свойство (`property`) — атрибут с управляемым доступом
+**Теория:**
+`property` — это встроенный класс Python, который превращает методы в атрибуты. Снаружи это выглядит как обычный атрибут (`obj.name`), но при обращении к нему вызываются специальные методы (геттер, сеттер, делитер). Это делает код чище и естественнее — вместо `obj.get_celsius()` пишем просто `obj.celsius`.
+
+**Как это работает:**
+Когда вы создаёте `property`, вы связываете имя атрибута с методами:
+- При **чтении** атрибута (`print(obj.celsius)`) вызывается геттер
+- При **записи** атрибута (`obj.celsius = 30`) вызывается сеттер
+- При **удалении** атрибута (`del obj.celsius`) вызывается делитер
+
+**Синтаксис:**
+```python
+attribute = property(fget=getter, fset=setter, fdel=deleter, doc=docstring)
+```
+- `fget` — функция-геттер (для чтения)
+- `fset` — функция-сеттер (для записи)
+- `fdel` — функция-делитер (для удаления)
+- `doc` — строка документации (опционально)
+
+Все параметры опциональны — можно создать property только с геттером (read-only).
+
+**Примеры:**
+
+```python
+# Пример 1: property с геттером и сеттером
+class Temperature:
+    def __init__(self, celsius):
+        self._celsius = celsius
+    
+    def get_celsius(self):
+        print("Получение температуры")
+        return self._celsius
+    
+    def set_celsius(self, value):
+        print("Установка температуры")
+        if value < -273.15:
+            raise ValueError("Температура не может быть ниже абсолютного нуля")
+        self._celsius = value
+    
+    def del_celsius(self):
+        print("Удаление температуры")
+        del self._celsius
+    
+    # Создаём property, связывая его с методами
+    celsius = property(get_celsius, set_celsius, del_celsius, "Температура в градусах Цельсия")
+
+temp = Temperature(25)
+
+# Работаем как с обычным атрибутом, но вызываются методы
+print(temp.celsius)  # Получение температуры → 25
+temp.celsius = 30    # Установка температуры
+print(temp.celsius)  # Получение температуры → 30
+del temp.celsius     # Удаление температуры
+
+# Можем прочитать документацию
+print(Temperature.celsius.__doc__)  # Температура в градусах Цельсия
+```
+
+```python
+# Пример 2: property только с геттером (read-only атрибут)
+class Circle:
+    def __init__(self, radius):
+        self._radius = radius
+    
+    def get_area(self):
+        return 3.14159 * self._radius ** 2
+    
+    def get_circumference(self):
+        return 2 * 3.14159 * self._radius
+    
+    # Read-only свойства — только геттер
+    area = property(get_area)
+    circumference = property(get_circumference)
+
+circle = Circle(5)
+print(circle.area)          # 78.53975
+print(circle.circumference) # 31.4159
+
+# Нельзя изменить — нет сеттера
+try:
+    circle.area = 100
+except AttributeError as e:
+    print(f"Ошибка: {e}")  # can't set attribute
+```
+
+```python
+# Пример 3: Вычисляемые свойства с преобразованием единиц
+class Distance:
+    def __init__(self, meters):
+        self._meters = meters
+    
+    def get_meters(self):
+        return self._meters
+    
+    def set_meters(self, value):
+        if value < 0:
+            raise ValueError("Расстояние не может быть отрицательным")
+        self._meters = value
+    
+    def get_kilometers(self):
+        """Автоматическое преобразование в километры"""
+        return self._meters / 1000
+    
+    def set_kilometers(self, value):
+        """Устанавливаем через километры, сохраняем в метрах"""
+        if value < 0:
+            raise ValueError("Расстояние не может быть отрицательным")
+        self._meters = value * 1000
+    
+    def get_miles(self):
+        """Автоматическое преобразование в мили"""
+        return self._meters / 1609.34
+    
+    def set_miles(self, value):
+        """Устанавливаем через мили, сохраняем в метрах"""
+        if value < 0:
+            raise ValueError("Расстояние не может быть отрицательным")
+        self._meters = value * 1609.34
+    
+    # Создаём свойства для разных единиц измерения
+    meters = property(get_meters, set_meters)
+    kilometers = property(get_kilometers, set_kilometers)
+    miles = property(get_miles, set_miles)
+
+distance = Distance(5000)  # 5000 метров
+
+print(distance.meters)      # 5000
+print(distance.kilometers)  # 5.0
+print(distance.miles)       # 3.106855
+
+# Устанавливаем в километрах
+distance.kilometers = 10
+print(distance.meters)      # 10000.0
+
+# Устанавливаем в милях
+distance.miles = 1
+print(distance.meters)      # 1609.34
+print(distance.kilometers)  # 1.60934
+```
+
+```python
+# Пример 4: Свойство с делитером и сложной логикой
+class User:
+    def __init__(self, username, password):
+        self._username = username
+        self._password = password
+        self._is_active = True
+    
+    def get_password(self):
+        """Возвращаем замаскированный пароль"""
+        return "*" * len(self._password)
+    
+    def set_password(self, value):
+        """Проверяем сложность пароля"""
+        if len(value) < 8:
+            raise ValueError("Пароль должен быть минимум 8 символов")
+        if not any(c.isdigit() for c in value):
+            raise ValueError("Пароль должен содержать цифры")
+        if not any(c.isupper() for c in value):
+            raise ValueError("Пароль должен содержать заглавные буквы")
+        self._password = value
+        print("Пароль успешно изменён")
+    
+    def del_password(self):
+        """При удалении пароля деактивируем пользователя"""
+        print("Пароль удалён, пользователь деактивирован")
+        self._password = None
+        self._is_active = False
+    
+    password = property(get_password, set_password, del_password, "Пароль пользователя")
+
+user = User("ivan", "Secret123")
+
+print(user.password)  # ********* (замаскирован)
+
+user.password = "NewPass456"  # Пароль успешно изменён
+print(user.password)          # **********
+
+try:
+    user.password = "weak"  # ValueError: Пароль должен быть минимум 8 символов
+except ValueError as e:
+    print(f"Ошибка: {e}")
+
+del user.password  # Пароль удалён, пользователь деактивирован
+print(user._is_active)  # False
+```
+
+```python
+# Пример 5: Сравнение старого и нового стиля
+class Rectangle:
+    def __init__(self, width, height):
+        self._width = width
+        self._height = height
+    
+    # Геттеры
+    def get_width(self):
+        return self._width
+    
+    def get_height(self):
+        return self._height
+    
+    def get_area(self):
+        return self._width * self._height
+    
+    # Сеттеры
+    def set_width(self, value):
+        if value <= 0:
+            raise ValueError("Ширина должна быть положительной")
+        self._width = value
+    
+    def set_height(self, value):
+        if value <= 0:
+            raise ValueError("Высота должна быть положительной")
+        self._height = value
+    
+    # Превращаем в свойства
+    width = property(get_width, set_width)
+    height = property(get_height, set_height)
+    area = property(get_area)  # read-only
+
+rect = Rectangle(5, 10)
+
+# Старый стиль (если бы не было property):
+# rect.set_width(8)
+# print(rect.get_area())
+
+# Новый стиль с property:
+rect.width = 8       # Естественный синтаксис!
+print(rect.area)     # 80
+print(rect.height)   # 10
+
+# Валидация работает
+try:
+    rect.width = -5
+except ValueError as e:
+    print(f"Ошибка: {e}")  # Ширина должна быть положительной
+```
+
+**Преимущества property:**
+1. **Естественный синтаксис** — `obj.celsius = 30` вместо `obj.set_celsius(30)`
+2. **Обратная совместимость** — можно добавить валидацию к существующему атрибуту без изменения кода, который его использует
+3. **Вычисляемые атрибуты** — значение рассчитывается динамически, но выглядит как обычный атрибут
+4. **Read-only атрибуты** — легко создать атрибут, который можно только читать
+5. **Единообразие** — все атрибуты используют одинаковый синтаксис
+
+**Недостатки старого синтаксиса property:**
+Хотя `property()` лучше явных геттеров/сеттеров, код всё ещё выглядит громоздко — приходится писать отдельные функции и связывать их. Есть более элегантное решение — декоратор `@property`, о котором в следующем разделе!
+
+
+## `26.5` Декоратор `@property` — как работает и зачем
+[Видео про @property](https://youtu.be/HkbQ_NaH0Lc?si=ufzyV1HdKl6a48Ov)
+
+**Теория:**
+`@property` — это декоратор, который делает то же самое, что и `property()`, но синтаксис гораздо красивее и понятнее. Это современный и рекомендуемый способ создания свойств в Python.
+
+**Как работает:**
+1. `@property` над методом делает его геттером
+2. `@имя_свойства.setter` создаёт сеттер для этого свойства
+3. `@имя_свойства.deleter` создаёт делитер для этого свойства
+
+Все три декоратора работают с одним и тем же именем свойства, связывая соответствующие методы.
+
+**Важно:** Имя метода под декоратором должно совпадать с именем свойства. Сначала определяется геттер с `@property`, затем можно добавить сеттер и делитер.
+
+**Примеры:**
+
+```python
+# Пример 1: Базовое использование @property
+class Person:
+    def __init__(self, name, age):
+        self._name = name
+        self._age = age
+    
+    @property
+    def name(self):
+        """Геттер для имени"""
+        return self._name.title()  # Возвращаем с большой буквы
+    
+    @property
+    def age(self):
+        """Геттер для возраста"""
+        return self._age
+    
+    @age.setter
+    def age(self, value):
+        """Сеттер для возраста с валидацией"""
+        if not isinstance(value, int):
+            raise TypeError("Возраст должен быть целым числом")
+        if value < 0 or value > 150:
+            raise ValueError("Некорректный возраст")
+        self._age = value
+    
+    @age.deleter
+    def age(self):
+        """Делитер для возраста"""
+        print("Удаление возраста")
+        del self._age
+
+person = Person("иван", 30)
+print(person.name)  # Иван (автоматически с большой буквы)
+print(person.age)   # 30
+
+person.age = 35     # Сработает валидация
+print(person.age)   # 35
+
+# person.age = -5   # ValueError: Некорректный возраст
+# person.age = "30" # TypeError: Возраст должен быть целым числом
+
+del person.age      # Удаление возраста
+```
+
+```python
+# Пример 2: Вычисляемые свойства
+class Rectangle:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+    
+    @property
+    def area(self):
+        """Площадь вычисляется динамически"""
+        return self.width * self.height
+    
+    @property
+    def perimeter(self):
+        """Периметр вычисляется динамически"""
+        return 2 * (self.width + self.height)
+
+rect = Rectangle(5, 10)
+print(rect.area)      # 50
+print(rect.perimeter) # 30
+
+rect.width = 8
+print(rect.area)      # 80 (автоматически пересчиталось!)
+# rect.area = 100     # AttributeError: can't set attribute
+```
+
+```python
+# Пример 3: Преобразование единиц измерения
+class Temperature:
+    def __init__(self, celsius):
+        self._celsius = celsius
+    
+    @property
+    def celsius(self):
+        return self._celsius
+    
+    @celsius.setter
+    def celsius(self, value):
+        if value < -273.15:
+            raise ValueError("Температура не может быть ниже абсолютного нуля")
+        self._celsius = value
+    
+    @property
+    def fahrenheit(self):
+        """Автоматическое преобразование в Фаренгейты"""
+        return self._celsius * 9/5 + 32
+    
+    @fahrenheit.setter
+    def fahrenheit(self, value):
+        """Устанавливаем через Фаренгейты, сохраняем в Цельсиях"""
+        self._celsius = (value - 32) * 5/9
+
+temp = Temperature(0)
+print(temp.celsius)     # 0
+print(temp.fahrenheit)  # 32.0
+
+temp.fahrenheit = 212   # Устанавливаем 212°F
+print(temp.celsius)     # 100.0 (автоматически конвертировалось!)
+```
+
+```python
+# Пример 4: Ленивая инициализация с кэшированием
+class DataLoader:
+    def __init__(self, filename):
+        self.filename = filename
+        self._data = None  # Данные ещё не загружены
+    
+    @property
+    def data(self):
+        """Загружаем данные только при первом обращении"""
+        if self._data is None:
+            print(f"Загрузка данных из {self.filename}...")
+            # Симуляция загрузки данных
+            self._data = f"Содержимое файла {self.filename}"
+        return self._data
+    
+    @data.setter
+    def data(self, value):
+        """Обновляем кэш"""
+        print("Обновление кэшированных данных")
+        self._data = value
+    
+    @data.deleter
+    def data(self):
+        """Очищаем кэш"""
+        print("Очистка кэша")
+        self._data = None
+
+loader = DataLoader("data.txt")
+print("Объект создан, но данные не загружены")
+
+# Первое обращение — данные загружаются
+print(loader.data)  # Загрузка данных из data.txt... → Содержимое файла data.txt
+
+# Второе обращение — используется кэш
+print(loader.data)  # Содержимое файла data.txt (без загрузки)
+
+# Очищаем кэш
+del loader.data  # Очистка кэша
+
+# Снова загружается при обращении
+print(loader.data)  # Загрузка данных из data.txt... → Содержимое файла data.txt
+```
+
+```python
+# Пример 5: Сложная валидация и связанные свойства
+class BankAccount:
+    def __init__(self, owner, balance):
+        self._owner = owner
+        self._balance = balance
+        self._transaction_history = []
+    
+    @property
+    def owner(self):
+        return self._owner
+    
+    @owner.setter
+    def owner(self, value):
+        if not value or not value.strip():
+            raise ValueError("Владелец не может быть пустым")
+        old_owner = self._owner
+        self._owner = value.strip()
+        print(f"Владелец счёта изменён: {old_owner} → {self._owner}")
+    
+    @property
+    def balance(self):
+        return self._balance
+    
+    @balance.setter
+    def balance(self, value):
+        if value < 0:
+            raise ValueError("Баланс не может быть отрицательным")
+        
+        change = value - self._balance
+        self._balance = value
+        
+        # Записываем в историю транзакций
+        self._transaction_history.append({
+            'new_balance': value,
+            'change': change
+        })
+        print(f"Баланс изменён: {change:+.2f} (новый баланс: {value:.2f})")
+    
+    @property
+    def transaction_history(self):
+        """Read-only свойство — нельзя изменить историю напрямую"""
+        return self._transaction_history.copy()
+
+account = BankAccount("Иван Иванов", 1000)
+
+print(account.balance)  # 1000
+
+account.balance = 1500  # Баланс изменён: +500.00 (новый баланс: 1500.00)
+account.balance = 1200  # Баланс изменён: -300.00 (новый баланс: 1200.00)
+
+print(account.transaction_history)
+# [{'new_balance': 1500, 'change': 500}, {'new_balance': 1200, 'change': -300}]
+
+account.owner = "Пётр Петров"  # Владелец счёта изменён: Иван Иванов → Пётр Петров
+```
+
+```python
+# Пример 6: Сравнение старого синтаксиса property() с @property
+class Circle:
+    def __init__(self, radius):
+        self._radius = radius
+    
+    # Старый способ с property()
+    def get_radius(self):
+        return self._radius
+    
+    def set_radius(self, value):
+        if value <= 0:
+            raise ValueError("Радиус должен быть положительным")
+        self._radius = value
+    
+    radius_old = property(get_radius, set_radius)
+    
+    # Новый способ с @property (гораздо чище!)
+    @property
+    def diameter(self):
+        return self._radius * 2
+    
+    @diameter.setter
+    def diameter(self, value):
+        if value <= 0:
+            raise ValueError("Диаметр должен быть положительным")
+        self._radius = value / 2
+    
+    @property
+    def area(self):
+        return 3.14159 * self._radius ** 2
+
+circle = Circle(5)
+
+# Оба способа работают одинаково
+print(circle.radius_old)  # 5
+print(circle.diameter)    # 10
+print(circle.area)        # 78.53975
+
+circle.diameter = 20
+print(circle.radius_old)  # 10.0
+print(circle.area)        # 314.159
+```
+
+**Преимущества @property:**
+- **Чистый синтаксис** — код выглядит как обычные атрибуты: `obj.value` вместо `obj.get_value()`
+- **Читабельность** — все методы для одного свойства находятся рядом
+- **Обратная совместимость** — можно добавить валидацию к существующим атрибутам без изменения внешнего API
+- **Ленивые вычисления** — значение вычисляется только при обращении
+- **Pythonic** — это стандартный и рекомендуемый способ создания свойств в Python
+
+**Когда использовать @property:**
+- Нужна валидация при установке значения
+- Атрибут должен быть вычисляемым (например, площадь из ширины и высоты)
+- Нужно преобразование данных при чтении/записи
+- Требуется ленивая инициализация
+- Хотите сделать атрибут read-only (только геттер без сеттера)
+- Нужно логирование обращений к атрибуту
+
+
+## `26.6` Декораторы `@classmethod` и `@staticmethod` — что такое `cls` и различия
+**Теория:**
+Обычные методы работают с экземплярами класса через `self`. Но иногда нужны методы, которые:
+- Работают с самим классом, а не с конкретным объектом — `@classmethod`
+- Вообще не зависят от класса или объекта — `@staticmethod`
+
+### `@classmethod`
+- Первый параметр — `cls` (сам класс, а не объект)
+- Может обращаться к атрибутам класса и создавать экземпляры
+- Используется для фабричных методов (альтернативных конструкторов)
+
+### `@staticmethod`
+- Не получает ни `self`, ни `cls`
+- Просто функция внутри класса для логической группировки
+- Не может менять состояние класса или объекта
+
+**Примеры:**
+
+```python
+# Пример 1: Различия между методами
+class MyClass:
+    class_variable = "Я переменная класса"
+    
+    def instance_method(self):
+        """Обычный метод — работает с объектом"""
+        return f"Вызван из объекта: {self}"
+    
+    @classmethod
+    def class_method(cls):
+        """Метод класса — работает с классом"""
+        return f"Вызван из класса: {cls.__name__}, переменная: {cls.class_variable}"
+    
+    @staticmethod
+    def static_method():
+        """Статический метод — не работает ни с чем"""
+        return "Просто функция в классе"
+
+obj = MyClass()
+
+print(obj.instance_method())      # Вызван из объекта: <__main__.MyClass object at ...>
+print(obj.class_method())         # Вызван из класса: MyClass, переменная: Я переменная класса
+print(MyClass.class_method())     # То же самое — можно вызывать через класс
+print(MyClass.static_method())    # Просто функция в классе
+```
+
+```python
+# Пример 2: @classmethod для альтернативных конструкторов
+class Date:
+    def __init__(self, year, month, day):
+        self.year = year
+        self.month = month
+        self.day = day
+    
+    @classmethod
+    def from_string(cls, date_string):
+        """Создание объекта из строки"""
+        year, month, day = map(int, date_string.split('-'))
+        return cls(year, month, day)  # cls — это Date (или подкласс)
+    
+    @classmethod
+    def today(cls):
+        """Создание объекта с сегодняшней датой"""
+        import datetime
+        today = datetime.date.today()
+        return cls(today.year, today.month, today.day)
+    
+    def __str__(self):
+        return f"{self.year}-{self.month:02d}-{self.day:02d}"
+
+# Разные способы создания объекта
+date1 = Date(2025, 10, 9)              # Обычный конструктор
+date2 = Date.from_string("2025-10-09") # Через classmethod
+date3 = Date.today()                   # Через classmethod
+
+print(date1)  # 2025-10-09
+print(date2)  # 2025-10-09
+print(date3)  # 2025-10-09
+```
+
+```python
+# Пример 3: @staticmethod для вспомогательных функций
+class StringUtils:
+    @staticmethod
+    def is_palindrome(text):
+        """Проверка, является ли строка палиндромом"""
+        cleaned = text.replace(" ", "").lower()
+        return cleaned == cleaned[::-1]
+    
+    @staticmethod
+    def count_words(text):
+        """Подсчёт слов в строке"""
+        return len(text.split())
+    
+    @staticmethod
+    def reverse_words(text):
+        """Переворот слов в строке"""
+        return ' '.join(text.split()[::-1])
+
+# Можно вызывать без создания объекта
+print(StringUtils.is_palindrome("А роза упала на лапу Азора"))  # True
+print(StringUtils.count_words("Привет мир"))                    # 2
+print(StringUtils.reverse_words("Привет мир"))                  # мир Привет
+
+# Или через объект (но смысла нет)
+utils = StringUtils()
+print(utils.is_palindrome("level"))  # True
+```
+
+```python
+# Пример 4: Наследование и @classmethod
+class Animal:
+    species_count = 0
+    
+    def __init__(self, name):
+        self.name = name
+        Animal.species_count += 1
+    
+    @classmethod
+    def get_count(cls):
+        return f"Всего {cls.__name__}: {cls.species_count}"
+    
+    @classmethod
+    def create_many(cls, names):
+        """Создаёт несколько экземпляров"""
+        return [cls(name) for name in names]
+
+class Dog(Animal):
+    pass
+
+class Cat(Animal):
+    pass
+
+# classmethod работает с правильным классом
+dogs = Dog.create_many(["Бобик", "Рекс"])
+cats = Cat.create_many(["Мурка"])
+
+print(Dog.get_count())  # Всего Dog: 3
+print(Cat.get_count())  # Всего Cat: 3
+# species_count общий для всех, но cls.__name__ разный
+```
+
+**Когда что использовать:**
+- **Обычный метод** — когда нужен доступ к атрибутам объекта
+- **@classmethod** — для альтернативных конструкторов, работы с атрибутами класса
+- **@staticmethod** — для утилитарных функций, логически связанных с классом
+
+
+## `26.7` (`**`) Продвинутое: `@singledispatchmethod` — перегрузка методов по типу аргумента
+[Видео про @singledispatchmethod](https://www.youtube.com/watch?v=iXORLumN1Lo)
+
+**Теория:**
+`@singledispatchmethod` — это декоратор из модуля `functools`, который позволяет создавать методы с разным поведением в зависимости от типа первого аргумента (после `self`). Это называется **перегрузка методов** или **single dispatch**.
+
+**Зачем нужно:**
+В Python нет встроенной перегрузки методов, как в Java или C++. Обычно приходится писать множество `if isinstance(...)` проверок. `@singledispatchmethod` делает код чище и понятнее.
+
+**Как работает:**
+1. Базовый метод с `@singledispatchmethod` определяет общее поведение
+2. Специализированные версии регистрируются через `@метод.register`
+3. Python автоматически выбирает нужную версию по типу аргумента
+
+**Примеры:**
+
+```python
+# Пример 1: Базовое использование
+from functools import singledispatchmethod
+
+class DataProcessor:
+    @singledispatchmethod
+    def process(self, data):
+        """Базовая версия — для неизвестных типов"""
+        raise NotImplementedError(f"Не знаю как обработать {type(data)}")
+    
+    @process.register
+    def _(self, data: str):
+        """Специальная версия для строк"""
+        return f"Обработка строки: {data.upper()}"
+    
+    @process.register
+    def _(self, data: int):
+        """Специальная версия для чисел"""
+        return f"Обработка числа: {data * 2}"
+    
+    @process.register
+    def _(self, data: list):
+        """Специальная версия для списков"""
+        return f"Обработка списка из {len(data)} элементов: {sum(data)}"
+
+processor = DataProcessor()
+
+print(processor.process("hello"))      # Обработка строки: HELLO
+print(processor.process(42))           # Обработка числа: 84
+print(processor.process([1, 2, 3]))    # Обработка списка из 3 элементов: 6
+# processor.process(3.14)              # NotImplementedError
+```
+
+```python
+# Пример 2: Форматирование разных типов данных
+from functools import singledispatchmethod
+from datetime import datetime
+
+class Formatter:
+    @singledispatchmethod
+    def format(self, value):
+        """По умолчанию — просто str()"""
+        return str(value)
+    
+    @format.register
+    def _(self, value: int):
+        """Форматирование целых чисел"""
+        return f"{value:,}".replace(",", " ")  # 1000000 → 1 000 000
+    
+    @format.register
+    def _(self, value: float):
+        """Форматирование дробных чисел"""
+        return f"{value:.2f}"  # 3.14159 → 3.14
+    
+    @format.register
+    def _(self, value: bool):
+        """Форматирование булевых значений"""
+        return "✓" if value else "✗"
+    
+    @format.register
+    def _(self, value: datetime):
+        """Форматирование дат"""
+        return value.strftime("%d.%m.%Y %H:%M")
+    
+    @format.register(list)
+    @format.register(tuple)
+    def _(self, value):
+        """Форматирование последовательностей (можно регистрировать несколько типов)"""
+        formatted = [self.format(item) for item in value]
+        return f"[{', '.join(formatted)}]"
+
+formatter = Formatter()
+
+print(formatter.format(1000000))                    # 1 000 000
+print(formatter.format(3.14159))                    # 3.14
+print(formatter.format(True))                       # ✓
+print(formatter.format(datetime(2025, 10, 9, 14, 30)))  # 09.10.2025 14:30
+print(formatter.format([1, 2.5, True]))             # [1, 2.50, ✓]
+print(formatter.format((100, 200)))                 # [100, 200]
+```
+
+```python
+# Пример 3: Сохранение в разные форматы
+from functools import singledispatchmethod
+import json
+
+class DataSaver:
+    def __init__(self, filename):
+        self.filename = filename
+    
+    @singledispatchmethod
+    def save(self, data):
+        """Базовый метод — ошибка"""
+        raise TypeError(f"Не могу сохранить тип {type(data)}")
+    
+    @save.register
+    def _(self, data: dict):
+        """Сохранение словаря в JSON"""
+        with open(self.filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"Словарь сохранён в JSON: {self.filename}")
+    
+    @save.register
+    def _(self, data: str):
+        """Сохранение строки в текстовый файл"""
+        with open(self.filename, 'w', encoding='utf-8') as f:
+            f.write(data)
+        print(f"Строка сохранена в TXT: {self.filename}")
+    
+    @save.register
+    def _(self, data: list):
+        """Сохранение списка построчно"""
+        with open(self.filename, 'w', encoding='utf-8') as f:
+            for item in data:
+                f.write(f"{item}\n")
+        print(f"Список сохранён построчно: {self.filename}")
+
+# Использование
+saver = DataSaver("output.txt")
+saver.save({"name": "Иван", "age": 30})  # Словарь сохранён в JSON: output.txt
+saver.save("Привет, мир!")               # Строка сохранена в TXT: output.txt
+saver.save([1, 2, 3, 4, 5])              # Список сохранён построчно: output.txt
+```
+
+**Важные моменты:**
+- Dispatch происходит только по **первому** аргументу после `self`
+- Типы проверяются через `isinstance()`, работает наследование
+- Можно регистрировать один метод для нескольких типов
+- Имя метода в `@метод.register` можно опустить (использовать `_`)
+
+**Альтернатива без singledispatchmethod:**
+```python
+# Без singledispatchmethod пришлось бы писать так:
+def process(self, data):
+    if isinstance(data, str):
+        return f"Обработка строки: {data.upper()}"
+    elif isinstance(data, int):
+        return f"Обработка числа: {data * 2}"
+    elif isinstance(data, list):
+        return f"Обработка списка: {sum(data)}"
+    else:
+        raise NotImplementedError(f"Не знаю как обработать {type(data)}")
+# Менее читабельно и сложнее поддерживать
+```
 
 ----
 
