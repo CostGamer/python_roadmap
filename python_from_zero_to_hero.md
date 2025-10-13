@@ -26115,10 +26115,1066 @@ print(len(unique_points))  # 3 (не 4!)
 Хеширование — ключевая возможность для использования пользовательских объектов в словарях и множествах. Главное правило: **если объект хешируемый, он должен быть неизменяемым** (или хешировать только неизменяемую часть).
 
 ## `27.7` (`**`) Ultra flex
-1) Унарные операторы
-2) Арифметические операции
-3) Преобразование типов
+### Унарные операторы
 
+**Унарные операторы** — операторы, которые применяются к одному операнду.
+
+**Магические методы для унарных операторов:**
+
+| Оператор | Метод | Описание | Пример |
+|----------|-------|----------|--------|
+| `-obj` | `__neg__` | Унарный минус (отрицание) | `-5` |
+| `+obj` | `__pos__` | Унарный плюс | `+5` |
+| `~obj` | `__invert__` | Побитовая инверсия | `~5` |
+| `abs(obj)` | `__abs__` | Абсолютное значение | `abs(-5)` |
+
+**Зачем нужны:**
+- 🔢 Математические операции с пользовательскими типами
+- 🎯 Естественный синтаксис для объектов
+- 🔄 Инверсия состояния или значения
+
+**Примеры:**
+
+```python
+# Пример 1: Векторы с унарными операторами
+class Vector:
+    """Математический вектор с унарными операциями"""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __neg__(self):
+        """Унарный минус: меняет направление вектора"""
+        return Vector(-self.x, -self.y)
+    
+    def __pos__(self):
+        """Унарный плюс: возвращает копию"""
+        return Vector(self.x, self.y)
+    
+    def __abs__(self):
+        """Абсолютное значение: длина вектора"""
+        return (self.x ** 2 + self.y ** 2) ** 0.5
+    
+    def __invert__(self):
+        """Инверсия: меняет компоненты местами"""
+        return Vector(self.y, self.x)
+    
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+
+# Создаем вектор
+v = Vector(3, 4)
+print(v)  # Vector(3, 4)
+
+# Унарный минус - противоположный вектор
+neg_v = -v
+print(neg_v)  # Vector(-3, -4)
+
+# Унарный плюс - копия
+pos_v = +v
+print(pos_v)  # Vector(3, 4)
+
+# Абсолютное значение - длина вектора
+length = abs(v)
+print(f"Длина вектора: {length}")  # 5.0
+
+# Инверсия - меняем компоненты
+inv_v = ~v
+print(inv_v)  # Vector(4, 3)
+
+# Цепочка операций
+result = -~v  # сначала ~, потом -
+print(result)  # Vector(-4, -3)
+```
+
+```python
+# Пример 2: Температура с преобразованиями
+class Temperature:
+    """Температура с унарными операторами"""
+    
+    def __init__(self, celsius):
+        self.celsius = celsius
+    
+    def __neg__(self):
+        """Отрицательная температура"""
+        return Temperature(-self.celsius)
+    
+    def __pos__(self):
+        """Положительная (абсолютная) температура"""
+        return Temperature(abs(self.celsius))
+    
+    def __abs__(self):
+        """Абсолютное значение температуры"""
+        return abs(self.celsius)
+    
+    def __invert__(self):
+        """Инверсия: конвертация Цельсий ↔ Фаренгейт (упрощенно)"""
+        # Если положительная - в Фаренгейт, если отрицательная - обратно
+        if self.celsius >= 0:
+            fahrenheit = self.celsius * 9/5 + 32
+            return Temperature(fahrenheit)
+        else:
+            # Обратное преобразование
+            celsius = (abs(self.celsius) - 32) * 5/9
+            return Temperature(-celsius)
+    
+    def __repr__(self):
+        return f"{self.celsius}°C"
+
+temp = Temperature(25)
+print(temp)  # 25°C
+
+# Отрицание
+cold = -temp
+print(cold)  # -25°C
+
+# Абсолютное значение
+print(abs(cold))  # 25
+
+# Конвертация
+fahrenheit = ~temp
+print(fahrenheit)  # 77.0°C (это 77°F в нашей системе)
+```
+
+```python
+# Пример 3: Логическое состояние
+class State:
+    """Состояние с возможностью инверсии"""
+    
+    def __init__(self, value):
+        self.value = value
+    
+    def __invert__(self):
+        """Инверсия состояния (не/да, вкл/выкл)"""
+        return State(not self.value)
+    
+    def __bool__(self):
+        """Приведение к bool"""
+        return self.value
+    
+    def __repr__(self):
+        return f"State({'ON' if self.value else 'OFF'})"
+
+# Создаем состояние
+state = State(True)
+print(state)  # State(ON)
+
+# Инверсия состояния
+off_state = ~state
+print(off_state)  # State(OFF)
+
+# Двойная инверсия
+back_on = ~~state
+print(back_on)  # State(ON)
+
+# Использование в условиях
+if state:
+    print("Включено")  # Включено
+
+if not ~state:
+    print("После инверсии выключено")
+```
+
+
+### Арифметические операции
+
+**Арифметические магические методы** позволяют использовать стандартные математические операторы с пользовательскими объектами.
+
+**Основные операторы:**
+
+| Оператор | Метод | Обратный метод | Метод на месте | Описание |
+|----------|-------|----------------|----------------|----------|
+| `+` | `__add__` | `__radd__` | `__iadd__` | Сложение |
+| `-` | `__sub__` | `__rsub__` | `__isub__` | Вычитание |
+| `*` | `__mul__` | `__rmul__` | `__imul__` | Умножение |
+| `/` | `__truediv__` | `__rtruediv__` | `__itruediv__` | Деление |
+| `//` | `__floordiv__` | `__rfloordiv__` | `__ifloordiv__` | Целочисленное деление |
+| `%` | `__mod__` | `__rmod__` | `__imod__` | Остаток |
+| `**` | `__pow__` | `__rpow__` | `__ipow__` | Возведение в степень |
+
+**Обратные методы (`__radd__`, `__rsub__` и т.д.):**
+- Вызываются, когда левый операнд не поддерживает операцию
+- Пример: `5 + obj` → вызовет `obj.__radd__(5)`
+
+**Методы на месте (`__iadd__`, `__isub__` и т.д.):**
+- Для операторов `+=`, `-=`, `*=` и т.д.
+- Изменяют объект на месте (если это нужно)
+
+**Примеры:**
+
+```python
+# Пример 1: Комплексные числа (упрощенная версия)
+class Complex:
+    """Комплексное число a + bi"""
+    
+    def __init__(self, real, imag):
+        self.real = real
+        self.imag = imag
+    
+    def __add__(self, other):
+        """Сложение комплексных чисел"""
+        if isinstance(other, Complex):
+            return Complex(self.real + other.real, self.imag + other.imag)
+        # Сложение с обычным числом
+        return Complex(self.real + other, self.imag)
+    
+    def __radd__(self, other):
+        """Обратное сложение: 5 + complex"""
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        """Вычитание"""
+        if isinstance(other, Complex):
+            return Complex(self.real - other.real, self.imag - other.imag)
+        return Complex(self.real - other, self.imag)
+    
+    def __mul__(self, other):
+        """Умножение: (a+bi)(c+di) = (ac-bd) + (ad+bc)i"""
+        if isinstance(other, Complex):
+            real = self.real * other.real - self.imag * other.imag
+            imag = self.real * other.imag + self.imag * other.real
+            return Complex(real, imag)
+        # Умножение на скаляр
+        return Complex(self.real * other, self.imag * other)
+    
+    def __rmul__(self, other):
+        """Обратное умножение: 5 * complex"""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        """Деление"""
+        if isinstance(other, (int, float)):
+            return Complex(self.real / other, self.imag / other)
+        raise NotImplementedError("Деление комплексных чисел")
+    
+    def __abs__(self):
+        """Модуль комплексного числа"""
+        return (self.real ** 2 + self.imag ** 2) ** 0.5
+    
+    def __repr__(self):
+        sign = '+' if self.imag >= 0 else ''
+        return f"{self.real}{sign}{self.imag}i"
+
+# Создаем комплексные числа
+c1 = Complex(3, 4)   # 3+4i
+c2 = Complex(1, -2)  # 1-2i
+
+print(f"c1 = {c1}")  # 3+4i
+print(f"c2 = {c2}")  # 1-2i
+
+# Сложение
+c3 = c1 + c2
+print(f"{c1} + {c2} = {c3}")  # 3+4i + 1-2i = 4+2i
+
+# Вычитание
+c4 = c1 - c2
+print(f"{c1} - {c2} = {c4}")  # 3+4i - 1-2i = 2+6i
+
+# Умножение
+c5 = c1 * c2
+print(f"{c1} * {c2} = {c5}")  # 3+4i * 1-2i = 11+(-2)i
+
+# Умножение на скаляр
+c6 = c1 * 2
+print(f"{c1} * 2 = {c6}")  # 6+8i
+
+# Обратное умножение
+c7 = 3 * c1
+print(f"3 * {c1} = {c7}")  # 9+12i
+
+# Деление на скаляр
+c8 = c1 / 2
+print(f"{c1} / 2 = {c8}")  # 1.5+2.0i
+
+# Модуль
+print(f"|{c1}| = {abs(c1)}")  # |3+4i| = 5.0
+```
+
+```python
+# Пример 2: Денежные суммы
+class Money:
+    """Денежная сумма с валютой"""
+    
+    def __init__(self, amount, currency="RUB"):
+        self.amount = amount
+        self.currency = currency
+    
+    def __add__(self, other):
+        """Сложение денег"""
+        if isinstance(other, Money):
+            if self.currency != other.currency:
+                raise ValueError(f"Нельзя складывать {self.currency} и {other.currency}")
+            return Money(self.amount + other.amount, self.currency)
+        # Добавление числа
+        return Money(self.amount + other, self.currency)
+    
+    def __radd__(self, other):
+        """Обратное сложение: 100 + money"""
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        """Вычитание"""
+        if isinstance(other, Money):
+            if self.currency != other.currency:
+                raise ValueError(f"Нельзя вычитать {other.currency} из {self.currency}")
+            return Money(self.amount - other.amount, self.currency)
+        return Money(self.amount - other, self.currency)
+    
+    def __mul__(self, other):
+        """Умножение на число (например, налог, скидка)"""
+        if isinstance(other, (int, float)):
+            return Money(self.amount * other, self.currency)
+        raise TypeError("Можно умножать только на число")
+    
+    def __rmul__(self, other):
+        """Обратное умножение: 2 * money"""
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        """Деление на число"""
+        if isinstance(other, (int, float)):
+            return Money(self.amount / other, self.currency)
+        raise TypeError("Можно делить только на число")
+    
+    def __iadd__(self, other):
+        """Оператор += (на месте)"""
+        if isinstance(other, Money):
+            if self.currency != other.currency:
+                raise ValueError(f"Нельзя складывать {self.currency} и {other.currency}")
+            self.amount += other.amount
+        else:
+            self.amount += other
+        return self
+    
+    def __repr__(self):
+        return f"{self.amount} {self.currency}"
+
+# Использование
+price = Money(1000, "RUB")
+tax = Money(200, "RUB")
+
+# Сложение
+total = price + tax
+print(f"Итого: {total}")  # Итого: 1200 RUB
+
+# Вычитание
+discount = Money(150, "RUB")
+final = total - discount
+print(f"Со скидкой: {final}")  # Со скидкой: 1050 RUB
+
+# Умножение (налог 13%)
+tax_amount = price * 0.13
+print(f"Налог 13%: {tax_amount}")  # Налог 13%: 130.0 RUB
+
+# Обратное умножение
+double = 2 * price
+print(f"Удвоенная цена: {double}")  # Удвоенная цена: 2000 RUB
+
+# Деление пополам
+half = price / 2
+print(f"Половина: {half}")  # Половина: 500.0 RUB
+
+# Оператор на месте +=
+budget = Money(5000, "RUB")
+print(f"Бюджет до: {budget}")
+budget += price
+print(f"Бюджет после: {budget}")  # Бюджет после: 6000 RUB
+
+# Сложение с числом
+result = price + 500
+print(f"С доплатой: {result}")  # С доплатой: 1500 RUB
+
+# Ошибка при смешивании валют
+try:
+    dollars = Money(100, "USD")
+    mixed = price + dollars
+except ValueError as e:
+    print(f"Ошибка: {e}")  # Ошибка: Нельзя складывать RUB и USD
+```
+
+```python
+# Пример 3: Дроби (рациональные числа)
+from math import gcd
+
+class Fraction:
+    """Математическая дробь a/b"""
+    
+    def __init__(self, numerator, denominator=1):
+        if denominator == 0:
+            raise ValueError("Знаменатель не может быть нулем")
+        
+        # Сокращаем дробь
+        common = gcd(abs(numerator), abs(denominator))
+        self.numerator = numerator // common
+        self.denominator = denominator // common
+        
+        # Знак всегда в числителе
+        if self.denominator < 0:
+            self.numerator = -self.numerator
+            self.denominator = -self.denominator
+    
+    def __add__(self, other):
+        """Сложение дробей: a/b + c/d = (ad + bc) / bd"""
+        if isinstance(other, Fraction):
+            num = self.numerator * other.denominator + other.numerator * self.denominator
+            den = self.denominator * other.denominator
+            return Fraction(num, den)
+        # Сложение с целым числом
+        return Fraction(self.numerator + other * self.denominator, self.denominator)
+    
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        """Вычитание"""
+        if isinstance(other, Fraction):
+            num = self.numerator * other.denominator - other.numerator * self.denominator
+            den = self.denominator * other.denominator
+            return Fraction(num, den)
+        return Fraction(self.numerator - other * self.denominator, self.denominator)
+    
+    def __mul__(self, other):
+        """Умножение: (a/b) * (c/d) = ac / bd"""
+        if isinstance(other, Fraction):
+            return Fraction(self.numerator * other.numerator, 
+                          self.denominator * other.denominator)
+        return Fraction(self.numerator * other, self.denominator)
+    
+    def __rmul__(self, other):
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        """Деление: (a/b) / (c/d) = (a/b) * (d/c)"""
+        if isinstance(other, Fraction):
+            return Fraction(self.numerator * other.denominator,
+                          self.denominator * other.numerator)
+        return Fraction(self.numerator, self.denominator * other)
+    
+    def __float__(self):
+        """Преобразование в float"""
+        return self.numerator / self.denominator
+    
+    def __repr__(self):
+        if self.denominator == 1:
+            return str(self.numerator)
+        return f"{self.numerator}/{self.denominator}"
+
+# Создаем дроби
+f1 = Fraction(1, 2)   # 1/2
+f2 = Fraction(1, 3)   # 1/3
+f3 = Fraction(2, 4)   # 2/4 = 1/2 (автоматически сокращается)
+
+print(f"f1 = {f1}")  # 1/2
+print(f"f2 = {f2}")  # 1/3
+print(f"f3 = {f3}")  # 1/2 (сокращено!)
+
+# Сложение
+result = f1 + f2
+print(f"{f1} + {f2} = {result}")  # 1/2 + 1/3 = 5/6
+
+# Вычитание
+result = f1 - f2
+print(f"{f1} - {f2} = {result}")  # 1/2 - 1/3 = 1/6
+
+# Умножение
+result = f1 * f2
+print(f"{f1} * {f2} = {result}")  # 1/2 * 1/3 = 1/6
+
+# Деление
+result = f1 / f2
+print(f"{f1} / {f2} = {result}")  # 1/2 / 1/3 = 3/2
+
+# Операции с целыми числами
+result = f1 + 1
+print(f"{f1} + 1 = {result}")  # 1/2 + 1 = 3/2
+
+result = 2 * f1
+print(f"2 * {f1} = {result}")  # 2 * 1/2 = 1
+
+# Преобразование в float
+print(f"{f1} = {float(f1)}")  # 1/2 = 0.5
+print(f"{result} = {float(result)}")  # 5/6 = 0.8333...
+```
+
+
+### Преобразование типов
+
+**Магические методы преобразования** позволяют конвертировать объекты в стандартные типы Python.
+
+**Основные методы:**
+
+| Метод | Функция | Результат | Описание |
+|-------|---------|-----------|----------|
+| `__int__` | `int(obj)` | `int` | Целое число |
+| `__float__` | `float(obj)` | `float` | Число с плавающей точкой |
+| `__bool__` | `bool(obj)` | `bool` | Булево значение |
+| `__str__` | `str(obj)` | `str` | Строка (для пользователей) |
+| `__bytes__` | `bytes(obj)` | `bytes` | Байтовая строка |
+| `__complex__` | `complex(obj)` | `complex` | Комплексное число |
+
+**Зачем нужны:**
+- 🔄 Естественная конвертация объектов
+- 🎯 Использование в арифметических выражениях
+- ✅ Проверка в условиях (`if obj:`)
+- 📊 Интеграция с встроенными функциями
+
+**Примеры:**
+
+```python
+# Пример 1: Температура с преобразованиями
+class Temperature:
+    """Температура с автоматическими преобразованиями"""
+    
+    def __init__(self, celsius):
+        self.celsius = celsius
+    
+    def __int__(self):
+        """Преобразование в целое число (округление)"""
+        return int(self.celsius)
+    
+    def __float__(self):
+        """Преобразование в float"""
+        return float(self.celsius)
+    
+    def __bool__(self):
+        """True если температура выше нуля"""
+        return self.celsius > 0
+    
+    def __str__(self):
+        """Строковое представление"""
+        return f"{self.celsius}°C"
+    
+    def __repr__(self):
+        return f"Temperature({self.celsius})"
+
+# Создаем температуры
+temp1 = Temperature(25.7)
+temp2 = Temperature(-5.3)
+temp3 = Temperature(0)
+
+# Преобразование в int
+print(f"int({temp1}) = {int(temp1)}")  # int(25.7°C) = 25
+print(f"int({temp2}) = {int(temp2)}")  # int(-5.3°C) = -5
+
+# Преобразование в float
+print(f"float({temp1}) = {float(temp1)}")  # float(25.7°C) = 25.7
+
+# Использование в арифметике
+result = int(temp1) + 10
+print(f"Температура + 10 = {result}")  # 35
+
+# Преобразование в bool (проверка условий)
+if temp1:
+    print(f"{temp1} - положительная температура")  # выполнится
+else:
+    print(f"{temp1} - отрицательная температура")
+
+if temp2:
+    print(f"{temp2} - положительная")
+else:
+    print(f"{temp2} - отрицательная")  # выполнится
+
+# Использование в списках
+temps = [temp1, temp2, temp3]
+positive_temps = [t for t in temps if t]  # только положительные
+print(f"Положительные: {positive_temps}")  # [Temperature(25.7)]
+
+# Сортировка (использует __float__ или __int__)
+sorted_temps = sorted(temps, key=float)
+print(f"Отсортированные: {sorted_temps}")
+# [Temperature(-5.3), Temperature(0), Temperature(25.7)]
+```
+
+```python
+# Пример 2: Счетчик с преобразованиями
+class Counter:
+    """Счетчик со встроенными преобразованиями"""
+    
+    def __init__(self, start=0):
+        self.count = start
+    
+    def increment(self):
+        self.count += 1
+    
+    def __int__(self):
+        """Текущее значение как int"""
+        return self.count
+    
+    def __float__(self):
+        """Текущее значение как float"""
+        return float(self.count)
+    
+    def __bool__(self):
+        """True если счетчик > 0"""
+        return self.count > 0
+    
+    def __str__(self):
+        return f"Counter: {self.count}"
+    
+    def __add__(self, other):
+        """Сложение со счетчиком или числом"""
+        if isinstance(other, Counter):
+            return Counter(self.count + other.count)
+        return Counter(self.count + other)
+    
+    def __radd__(self, other):
+        """Обратное сложение"""
+        return self.__add__(other)
+
+# Создаем счетчики
+c1 = Counter(5)
+c2 = Counter(3)
+c3 = Counter(0)
+
+# Преобразование в число
+print(f"int(c1) = {int(c1)}")  # 5
+print(f"float(c1) = {float(c1)}")  # 5.0
+
+# Использование в арифметике
+total = int(c1) + int(c2)
+print(f"Сумма счетчиков: {total}")  # 8
+
+# Сложение счетчиков
+c4 = c1 + c2
+print(f"c1 + c2 = {c4}")  # Counter: 8
+
+# Сложение с числом
+c5 = c1 + 10
+print(f"c1 + 10 = {c5}")  # Counter: 15
+
+# Обратное сложение
+c6 = 20 + c1
+print(f"20 + c1 = {c6}")  # Counter: 25
+
+# Проверка в условиях
+if c1:
+    print(f"{c1} - не пустой")  # выполнится
+
+if not c3:
+    print(f"{c3} - пустой")  # выполнится
+
+# Использование с sum()
+counters = [Counter(5), Counter(10), Counter(15)]
+total_sum = sum(counters, Counter(0))  # нужен start=Counter(0)
+print(f"Сумма всех: {total_sum}")  # Counter: 30
+```
+
+```python
+# Пример 3: Рейтинг с преобразованиями
+class Rating:
+    """Рейтинг из 5 звезд"""
+    
+    def __init__(self, stars):
+        if not 0 <= stars <= 5:
+            raise ValueError("Рейтинг должен быть от 0 до 5")
+        self.stars = stars
+    
+    def __int__(self):
+        """Целая часть рейтинга"""
+        return int(self.stars)
+    
+    def __float__(self):
+        """Точный рейтинг"""
+        return float(self.stars)
+    
+    def __bool__(self):
+        """True если есть хотя бы 1 звезда"""
+        return self.stars >= 1
+    
+    def __str__(self):
+        """Визуальное представление звездами"""
+        full_stars = int(self.stars)
+        has_half = (self.stars - full_stars) >= 0.5
+        empty_stars = 5 - full_stars - (1 if has_half else 0)
+        
+        result = "★" * full_stars
+        if has_half:
+            result += "½"
+        result += "☆" * empty_stars
+        
+        return f"{result} ({self.stars}/5)"
+    
+    def __repr__(self):
+        return f"Rating({self.stars})"
+    
+    def __add__(self, other):
+        """Сложение рейтингов (среднее)"""
+        if isinstance(other, Rating):
+            avg = (self.stars + other.stars) / 2
+            return Rating(avg)
+        raise TypeError("Можно складывать только с Rating")
+
+# Создаем рейтинги
+r1 = Rating(4.5)
+r2 = Rating(3.0)
+r3 = Rating(5.0)
+r4 = Rating(0.5)
+
+# Визуализация
+print(r1)  # ★★★★½ (4.5/5)
+print(r2)  # ★★★☆☆ (3.0/5)
+print(r3)  # ★★★★★ (5.0/5)
+print(r4)  # ½☆☆☆☆ (0.5/5)
+
+# Преобразование в число
+print(f"int({r1}) = {int(r1)}")  # 4
+print(f"float({r1}) = {float(r1)}")  # 4.5
+
+# Использование в условиях
+if r1:
+    print(f"{r1} - положительный рейтинг")  # выполнится
+
+if not Rating(0):
+    print("Нулевой рейтинг = False")  # выполнится
+
+# Среднее двух рейтингов
+avg = r1 + r2
+print(f"Средний рейтинг: {avg}")  # ★★★★☆ (3.75/5)
+
+# Подсчет среднего рейтинга товара
+ratings = [Rating(5), Rating(4), Rating(5), Rating(3), Rating(4)]
+average_rating = sum(map(float, ratings)) / len(ratings)
+final_rating = Rating(average_rating)
+print(f"Средний рейтинг товара: {final_rating}")  # ★★★★☆ (4.2/5)
+
+# Фильтрация хороших рейтингов (>= 4 звезды)
+good_ratings = [r for r in ratings if float(r) >= 4.0]
+print(f"Хороших рейтингов: {len(good_ratings)} из {len(ratings)}")  # 4 из 5
+```
+
+
+**Итоговая шпаргалка:**
+
+### Унарные операторы:
+```python
+-obj   →   __neg__(self)     # унарный минус
++obj   →   __pos__(self)     # унарный плюс
+~obj   →   __invert__(self)  # побитовая инверсия
+abs(obj) → __abs__(self)     # абсолютное значение
+```
+
+### Арифметические операторы:
+```python
+obj + other  →  __add__(self, other)
+other + obj  →  __radd__(self, other)   # обратное сложение
+obj += other →  __iadd__(self, other)   # сложение на месте
+
+obj - other  →  __sub__(self, other)
+obj * other  →  __mul__(self, other)
+obj / other  →  __truediv__(self, other)
+obj // other →  __floordiv__(self, other)
+obj % other  →  __mod__(self, other)
+obj ** other →  __pow__(self, other)
+```
+
+### Преобразования типов:
+```python
+int(obj)     →  __int__(self)
+float(obj)   →  __float__(self)
+bool(obj)    →  __bool__(self)
+str(obj)     →  __str__(self)
+bytes(obj)   →  __bytes__(self)
+complex(obj) →  __complex__(self)
+```
+
+### Когда что использовать:
+
+**Унарные операторы:**
+- `__neg__` — для математических объектов (векторы, матрицы)
+- `__pos__` — редко нужен, обычно возвращает копию
+- `__abs__` — для объектов с понятием "величины" (длина, модуль)
+- `__invert__` — для битовых операций или логической инверсии
+
+**Арифметические операторы:**
+- Определяйте для математических типов (числа, векторы, матрицы)
+- Используйте `__radd__` для коммутативности: `5 + obj` = `obj + 5`
+- `__iadd__` для оптимизации изменяемых объектов
+- Возвращайте `NotImplemented` для несовместимых типов
+
+**Преобразования:**
+- `__int__`, `__float__` — для числовых объектов
+- `__bool__` — почти всегда нужен (для `if obj:`)
+- `__str__` — всегда определяйте (для `print()`)
+
+### Важные правила:
+
+**✅ Делайте:**
+```python
+class Good:
+    def __add__(self, other):
+        if isinstance(other, Good):
+            return Good(self.value + other.value)
+        elif isinstance(other, (int, float)):
+            return Good(self.value + other)
+        return NotImplemented  # для других типов
+    
+    def __radd__(self, other):
+        return self.__add__(other)  # переиспользуем логику
+```
+
+**❌ Не делайте:**
+```python
+class Bad:
+    def __add__(self, other):
+        # Плохо: изменяет self
+        self.value += other.value
+        return self
+    
+    def __radd__(self, other):
+        # Плохо: разная логика
+        return other + self.value  # может вызвать рекурсию!
+```
+
+### Полный пример класса с всеми операциями:
+
+```python
+class Quantity:
+    """Физическая величина с единицами измерения"""
+    
+    def __init__(self, value, unit=""):
+        self.value = value
+        self.unit = unit
+    
+    # Унарные операторы
+    def __neg__(self):
+        return Quantity(-self.value, self.unit)
+    
+    def __pos__(self):
+        return Quantity(+self.value, self.unit)
+    
+    def __abs__(self):
+        return Quantity(abs(self.value), self.unit)
+    
+    # Арифметические операторы
+    def __add__(self, other):
+        if isinstance(other, Quantity):
+            if self.unit != other.unit:
+                raise ValueError(f"Нельзя складывать {self.unit} и {other.unit}")
+            return Quantity(self.value + other.value, self.unit)
+        return Quantity(self.value + other, self.unit)
+    
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def __sub__(self, other):
+        if isinstance(other, Quantity):
+            if self.unit != other.unit:
+                raise ValueError(f"Нельзя вычитать {other.unit} из {self.unit}")
+            return Quantity(self.value - other.value, self.unit)
+        return Quantity(self.value - other, self.unit)
+    
+    def __mul__(self, other):
+        if isinstance(other, Quantity):
+            # Умножение величин (например, м * м = м²)
+            new_unit = f"{self.unit}·{other.unit}" if self.unit and other.unit else ""
+            return Quantity(self.value * other.value, new_unit)
+        return Quantity(self.value * other, self.unit)
+    
+    def __rmul__(self, other):
+        return self.__mul__(other)
+    
+    def __truediv__(self, other):
+        if isinstance(other, Quantity):
+            # Деление величин
+            new_unit = f"{self.unit}/{other.unit}" if other.unit else self.unit
+            return Quantity(self.value / other.value, new_unit)
+        return Quantity(self.value / other, self.unit)
+    
+    # Преобразования типов
+    def __int__(self):
+        return int(self.value)
+    
+    def __float__(self):
+        return float(self.value)
+    
+    def __bool__(self):
+        return self.value != 0
+    
+    def __str__(self):
+        return f"{self.value} {self.unit}".strip()
+    
+    def __repr__(self):
+        return f"Quantity({self.value}, '{self.unit}')"
+    
+    # Сравнение
+    def __eq__(self, other):
+        if isinstance(other, Quantity):
+            return self.value == other.value and self.unit == other.unit
+        return self.value == other
+    
+    def __lt__(self, other):
+        if isinstance(other, Quantity):
+            if self.unit != other.unit:
+                raise ValueError(f"Нельзя сравнивать {self.unit} и {other.unit}")
+            return self.value < other.value
+        return self.value < other
+
+# Использование всех возможностей
+distance1 = Quantity(100, "м")
+distance2 = Quantity(50, "м")
+time = Quantity(10, "с")
+
+print("=== Унарные операторы ===")
+print(f"-{distance1} = {-distance1}")  # -100 м
+print(f"abs({-distance1}) = {abs(-distance1)}")  # 100 м
+
+print("\n=== Арифметика ===")
+total_distance = distance1 + distance2
+print(f"{distance1} + {distance2} = {total_distance}")  # 150 м
+
+difference = distance1 - distance2
+print(f"{distance1} - {distance2} = {difference}")  # 50 м
+
+speed = distance1 / time
+print(f"{distance1} / {time} = {speed}")  # 10.0 м/с
+
+area = distance1 * distance2
+print(f"{distance1} * {distance2} = {area}")  # 5000 м·м
+
+doubled = 2 * distance1
+print(f"2 * {distance1} = {doubled}")  # 200 м
+
+print("\n=== Преобразования ===")
+print(f"int({distance1}) = {int(distance1)}")  # 100
+print(f"float({speed}) = {float(speed)}")  # 10.0
+
+print("\n=== Условия ===")
+if distance1:
+    print(f"{distance1} - ненулевое")  # выполнится
+
+if not Quantity(0, "м"):
+    print("Нулевое расстояние = False")  # выполнится
+
+print("\n=== Сравнение ===")
+print(f"{distance1} > {distance2}: {distance1 > distance2}")  # True
+print(f"{distance1} == {Quantity(100, 'м')}: {distance1 == Quantity(100, 'м')}")  # True
+
+# Ошибка при несовместимых единицах
+try:
+    result = distance1 + time
+except ValueError as e:
+    print(f"\nОшибка: {e}")  # Ошибка: Нельзя складывать м и с
+```
+
+### Практические советы:
+
+**1. Проверка типов:**
+```python
+def __add__(self, other):
+    if isinstance(other, MyClass):
+        # Логика для MyClass
+        pass
+    elif isinstance(other, (int, float)):
+        # Логика для чисел
+        pass
+    else:
+        return NotImplemented  # Важно!
+```
+
+**2. Обратные операторы:**
+```python
+def __radd__(self, other):
+    # Обычно просто переиспользуем __add__
+    return self.__add__(other)
+```
+
+**3. Операторы на месте (in-place):**
+```python
+def __iadd__(self, other):
+    # Для изменяемых объектов
+    self.value += other
+    return self  # Обязательно вернуть self!
+
+# Для неизменяемых - создаем новый
+def __iadd__(self, other):
+    return self.__add__(other)  # новый объект
+```
+
+**4. Возврат NotImplemented:**
+```python
+def __add__(self, other):
+    if isinstance(other, MyClass):
+        return MyClass(self.value + other.value)
+    return NotImplemented  # Позволяет other попробовать __radd__
+```
+
+**5. Булево значение:**
+```python
+def __bool__(self):
+    # Осмысленная логика для вашего класса
+    # Не просто True/False
+    return self.value != 0  # для числовых
+    return len(self.items) > 0  # для контейнеров
+    return self.is_valid()  # для состояния
+```
+
+### Распространенные паттерны:
+
+**Числовые типы:**
+```python
+class Number:
+    def __add__(self, other):
+        return Number(self.value + self._to_value(other))
+    
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    def _to_value(self, other):
+        """Вспомогательный метод для извлечения значения"""
+        if isinstance(other, Number):
+            return other.value
+        return other
+```
+
+**Контейнеры:**
+```python
+class Container:
+    def __len__(self):
+        return len(self.items)
+    
+    def __bool__(self):
+        return len(self.items) > 0
+    
+    def __add__(self, other):
+        # Объединение контейнеров
+        return Container(self.items + other.items)
+```
+
+**Неизменяемые объекты:**
+```python
+class Immutable:
+    def __add__(self, other):
+        # Всегда возвращаем новый объект
+        return Immutable(self.value + other.value)
+    
+    def __iadd__(self, other):
+        # Для неизменяемых __iadd__ = __add__
+        return self.__add__(other)
+```
+
+### Когда НЕ нужно определять:
+
+❌ **Не определяйте операторы если:**
+- Операция не имеет смысла для вашего класса
+- Поведение будет неочевидным для пользователя
+- Можно сделать обычным методом понятнее
+
+```python
+# ❌ Плохо: непонятное использование оператора
+class User:
+    def __add__(self, other):
+        # Что значит "сложить пользователей"?
+        return User(self.name + other.name)  # Странно!
+
+# ✅ Хорошо: явный метод
+class User:
+    def merge_with(self, other):
+        # Понятно, что делает
+        return User(self.name + " и " + other.name)
+```
+
+Магические методы делают ваши классы "питоничными" и удобными в использовании, но используйте их разумно — только когда операция действительно имеет смысл для вашего типа данных.
 
 
 
