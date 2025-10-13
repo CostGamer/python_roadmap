@@ -27203,36 +27203,3504 @@ class User:
 ----
 
 # `28` (`*`) Протоколы
+**Протокол** в Python — это набор методов, которые должен иметь объект, чтобы поддерживать определённое поведение. Это не формальный интерфейс (как в Java), а просто соглашение: "если у объекта есть метод `__iter__`, то он итерируемый".
+
+Python работает по принципу **утиной типизации**: "Если что-то выглядит как утка и крякает как утка, то это утка". Если у объекта есть нужные методы — Python будет с ним работать.
+
 ## `28.1` Итерируемые объекты и итераторы
+**Итерируемый объект (Iterable)** — это объект, по которому можно проходить в цикле `for`. Чтобы объект был итерируемым, у него должен быть метод `__iter__()`, который возвращает итератор.
+
+**Итератор (Iterator)** — это объект, который возвращает элементы по одному. У него должны быть методы:
+- `__iter__()` — возвращает сам себя
+- `__next__()` — возвращает следующий элемент или выбрасывает `StopIteration`
+
+### Пример 1: Простой итератор — счётчик
+
+```python
+class Counter:
+    """Итератор, который считает от start до end"""
+    
+    def __init__(self, start, end):
+        self.current = start
+        self.end = end
+    
+    def __iter__(self):
+        # Возвращаем сам себя, потому что это итератор
+        return self
+    
+    def __next__(self):
+        if self.current > self.end:
+            raise StopIteration  # Сигнал, что элементы закончились
+        
+        value = self.current
+        self.current += 1
+        return value
+
+
+# Использование
+counter = Counter(1, 5)
+
+for num in counter:
+    print(num)  # 1, 2, 3, 4, 5
+
+# Можно использовать вручную
+counter2 = Counter(10, 12)
+print(next(counter2))  # 10
+print(next(counter2))  # 11
+print(next(counter2))  # 12
+# print(next(counter2))  # StopIteration!
+```
+
+### Пример 2: Итерируемый класс — библиотека книг
+
+```python
+class Library:
+    """Итерируемая коллекция книг"""
+    
+    def __init__(self):
+        self.books = []
+    
+    def add_book(self, book):
+        self.books.append(book)
+    
+    def __iter__(self):
+        # Возвращаем итератор для списка книг
+        return iter(self.books)
+
+
+# Использование
+library = Library()
+library.add_book("Война и мир")
+library.add_book("Преступление и наказание")
+library.add_book("Мастер и Маргарита")
+
+for book in library:
+    print(book)
+# Война и мир
+# Преступление и наказание
+# Мастер и Маргарита
+```
+
+### Пример 3: Бесконечный итератор
+
+```python
+class InfiniteCounter:
+    """Бесконечный счётчик"""
+    
+    def __init__(self, start=0):
+        self.current = start
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        value = self.current
+        self.current += 1
+        return value
+
+
+# Использование
+counter = InfiniteCounter(100)
+
+# Берём только первые 5 элементов
+for i, num in enumerate(counter):
+    if i >= 5:
+        break
+    print(num)  # 100, 101, 102, 103, 104
+```
+
 ## `28.2` Протокол контекстных менеджеров
-## `28.3` Дескрипторы
-## `28.4` (`**`) Ultra flex
-1) Протокол последовательностей
-2) Протокол дескрипторов
+**Контекстный менеджер** — это объект, который управляет ресурсами (файлами, соединениями, блокировками) и гарантирует их корректное освобождение даже при ошибках. Используется с конструкцией `with`.
+
+Протокол контекстного менеджера требует два метода:
+- `__enter__()` — вызывается при входе в блок `with`
+- `__exit__(exc_type, exc_value, traceback)` — вызывается при выходе (даже при ошибке)
+
+### Пример 1: Менеджер для работы с файлом (простая версия)
+
+```python
+class FileManager:
+    """Контекстный менеджер для работы с файлами"""
+    
+    def __init__(self, filename, mode):
+        self.filename = filename
+        self.mode = mode
+        self.file = None
+    
+    def __enter__(self):
+        print(f"Открываем файл {self.filename}")
+        self.file = open(self.filename, self.mode)
+        return self.file  # Это значение попадёт в переменную после as
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        print(f"Закрываем файл {self.filename}")
+        if self.file:
+            self.file.close()
+        
+        # Если вернуть True, исключение будет подавлено
+        # Если False или None, исключение продолжит распространяться
+        return False
+
+
+# Использование
+with FileManager('test.txt', 'w') as f:
+    f.write('Привет, мир!')
+    # Файл автоматически закроется даже при ошибке
+
+# Вывод:
+# Открываем файл test.txt
+# Закрываем файл test.txt
+```
+
+### Пример 2: Таймер выполнения кода
+
+```python
+import time
+
+class Timer:
+    """Контекстный менеджер для измерения времени выполнения"""
+    
+    def __enter__(self):
+        self.start = time.time()
+        print("Запускаем таймер...")
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.end = time.time()
+        self.elapsed = self.end - self.start
+        print(f"Время выполнения: {self.elapsed:.4f} секунд")
+        return False
+
+
+# Использование
+with Timer():
+    # Какой-то долгий код
+    total = sum(range(1_000_000))
+    time.sleep(0.5)
+
+# Вывод:
+# Запускаем таймер...
+# Время выполнения: 0.5234 секунд
+```
+
+### Пример 3: Менеджер для временного изменения атрибута
+
+```python
+class TemporaryAttribute:
+    """Временно меняет атрибут объекта, потом восстанавливает"""
+    
+    def __init__(self, obj, attr_name, temp_value):
+        self.obj = obj
+        self.attr_name = attr_name
+        self.temp_value = temp_value
+        self.original_value = None
+    
+    def __enter__(self):
+        # Сохраняем оригинальное значение
+        self.original_value = getattr(self.obj, self.attr_name)
+        # Устанавливаем временное
+        setattr(self.obj, self.attr_name, self.temp_value)
+        print(f"Временно изменили {self.attr_name} на {self.temp_value}")
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Восстанавливаем оригинальное значение
+        setattr(self.obj, self.attr_name, self.original_value)
+        print(f"Восстановили {self.attr_name} обратно в {self.original_value}")
+        return False
+
+
+# Использование
+class Robot:
+    def __init__(self):
+        self.speed = 10
+
+robot = Robot()
+print(f"Скорость: {robot.speed}")  # 10
+
+with TemporaryAttribute(robot, 'speed', 100):
+    print(f"Скорость внутри блока: {robot.speed}")  # 100
+
+print(f"Скорость после блока: {robot.speed}")  # 10
+
+# Вывод:
+# Скорость: 10
+# Временно изменили speed на 100
+# Скорость внутри блока: 100
+# Восстановили speed обратно в 10
+# Скорость после блока: 10
+```
+
+## `28.3` (`**`) Дескрипторы
+[Протокол Дескриптора](https://www.youtube.com/watch?v=5WNZf1NRZUw)
+
+**Дескриптор** — это объект, который управляет доступом к атрибуту другого объекта. Это мощный механизм, на котором построены `property`, методы классов и статические методы.
+
+Протокол дескриптора включает методы:
+- `__get__(self, instance, owner)` — получение значения
+- `__set__(self, instance, value)` — установка значения
+- `__delete__(self, instance)` — удаление атрибута
+
+### Пример 1: Валидатор положительных чисел
+
+```python
+class PositiveNumber:
+    """Дескриптор, который проверяет, что значение положительное"""
+    
+    def __init__(self, name):
+        self.name = name
+    
+    def __get__(self, instance, owner):
+        # instance — это объект, у которого запрашивают атрибут
+        # owner — это класс
+        if instance is None:
+            return self
+        return instance.__dict__.get(self.name, 0)
+    
+    def __set__(self, instance, value):
+        if value < 0:
+            raise ValueError(f"{self.name} должно быть положительным числом!")
+        instance.__dict__[self.name] = value
+    
+    def __delete__(self, instance):
+        del instance.__dict__[self.name]
+
+
+class BankAccount:
+    """Банковский счёт с проверкой баланса"""
+    
+    balance = PositiveNumber('balance')  # Дескриптор
+    
+    def __init__(self, balance):
+        self.balance = balance
+
+
+# Использование
+account = BankAccount(1000)
+print(account.balance)  # 1000
+
+account.balance = 500  # OK
+print(account.balance)  # 500
+
+try:
+    account.balance = -100  # Ошибка!
+except ValueError as e:
+    print(e)  # balance должно быть положительным числом!
+```
+
+### Пример 2: Дескриптор для валидации email
+
+```python
+import re
+
+class EmailDescriptor:
+    """Дескриптор для проверки email"""
+    
+    def __init__(self, name):
+        self.name = name
+    
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return instance.__dict__.get(self.name)
+    
+    def __set__(self, instance, value):
+        # Простая проверка email
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', value):
+            raise ValueError(f"Некорректный email: {value}")
+        instance.__dict__[self.name] = value
+
+
+class User:
+    email = EmailDescriptor('email')
+    
+    def __init__(self, name, email):
+        self.name = name
+        self.email = email  # Проверка произойдёт здесь
+
+
+# Использование
+user = User("Иван", "ivan@example.com")
+print(user.email)  # ivan@example.com
+
+try:
+    user2 = User("Пётр", "invalid-email")  # Ошибка!
+except ValueError as e:
+    print(e)  # Некорректный email: invalid-email
+```
+
+### Пример 3: Дескриптор с кэшированием (ленивое вычисление)
+
+```python
+class LazyProperty:
+    """Дескриптор, который вычисляет значение только один раз"""
+    
+    def __init__(self, function):
+        self.function = function
+        self.name = function.__name__
+    
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        
+        # Проверяем, было ли уже вычислено значение
+        if self.name not in instance.__dict__:
+            # Вычисляем и сохраняем
+            value = self.function(instance)
+            instance.__dict__[self.name] = value
+            print(f"Вычисляем {self.name}...")
+        else:
+            print(f"Используем кэшированное значение {self.name}")
+        
+        return instance.__dict__[self.name]
+
+
+class DataProcessor:
+    def __init__(self, data):
+        self.data = data
+    
+    @LazyProperty
+    def processed_data(self):
+        # Тяжёлая операция
+        print("Выполняем сложную обработку данных...")
+        return [x * 2 for x in self.data]
+
+
+# Использование
+processor = DataProcessor([1, 2, 3, 4, 5])
+
+print("Первый доступ:")
+print(processor.processed_data)
+# Вычисляем processed_data...
+# Выполняем сложную обработку данных...
+# [2, 4, 6, 8, 10]
+
+print("\nВторой доступ:")
+print(processor.processed_data)
+# Используем кэшированное значение processed_data
+# [2, 4, 6, 8, 10]
+```
+
+## `28.4` (`**`) Протокол последовательностей
+**Протокол последовательности** позволяет объекту вести себя как список: поддерживать индексацию, срезы, `len()`, проверку вхождения через `in`.
+
+Нужные методы:
+- `__len__()` — возвращает длину
+- `__getitem__(key)` — получение элемента по индексу или срезу
+
+#### Пример: Кастомная последовательность — Fibonacci
+
+```python
+class FibonacciSequence:
+    """Последовательность чисел Фибоначчи с индексацией"""
+    
+    def __init__(self, max_length):
+        self.max_length = max_length
+        self._cache = [0, 1]  # Кэш для оптимизации
+    
+    def __len__(self):
+        return self.max_length
+    
+    def __getitem__(self, index):
+        # Поддержка отрицательных индексов
+        if isinstance(index, int):
+            if index < 0:
+                index = self.max_length + index
+            
+            if index < 0 or index >= self.max_length:
+                raise IndexError("Индекс за пределами последовательности")
+            
+            # Вычисляем числа Фибоначчи до нужного индекса
+            while len(self._cache) <= index:
+                next_fib = self._cache[-1] + self._cache[-2]
+                self._cache.append(next_fib)
+            
+            return self._cache[index]
+        
+        # Поддержка срезов
+        elif isinstance(index, slice):
+            return [self[i] for i in range(*index.indices(self.max_length))]
+        
+        raise TypeError("Индекс должен быть числом или срезом")
+    
+    def __contains__(self, value):
+        """Поддержка оператора in"""
+        return value in [self[i] for i in range(self.max_length)]
+
+
+# Использование
+fib = FibonacciSequence(10)
+
+print(len(fib))          # 10
+print(fib[0])            # 0
+print(fib[5])            # 5
+print(fib[-1])           # 34 (последний элемент)
+print(fib[2:6])          # [1, 2, 3, 5]
+print(8 in fib)          # True
+print(100 in fib)        # False
+
+# Можно итерировать
+for num in fib:
+    print(num, end=' ')  # 0 1 1 2 3 5 8 13 21 34
+```
+
+#### Пример: Playlist — музыкальный плейлист
+
+```python
+class Playlist:
+    """Плейлист с поддержкой индексации и срезов"""
+    
+    def __init__(self, name):
+        self.name = name
+        self.songs = []
+    
+    def add_song(self, song):
+        self.songs.append(song)
+    
+    def __len__(self):
+        return len(self.songs)
+    
+    def __getitem__(self, index):
+        return self.songs[index]
+    
+    def __setitem__(self, index, value):
+        """Позволяет изменять песни по индексу"""
+        self.songs[index] = value
+    
+    def __delitem__(self, index):
+        """Позволяет удалять песни по индексу"""
+        del self.songs[index]
+    
+    def __contains__(self, song):
+        return song in self.songs
+    
+    def __repr__(self):
+        return f"Playlist('{self.name}', {len(self)} песен)"
+
+
+# Использование
+playlist = Playlist("Моя музыка")
+playlist.add_song("Song A")
+playlist.add_song("Song B")
+playlist.add_song("Song C")
+playlist.add_song("Song D")
+
+print(len(playlist))              # 4
+print(playlist[0])                # Song A
+print(playlist[-1])               # Song D
+print(playlist[1:3])              # ['Song B', 'Song C']
+
+playlist[1] = "New Song B"        # Замена
+print(playlist[1])                # New Song B
+
+del playlist[0]                   # Удаление
+print(len(playlist))              # 3
+
+print("Song C" in playlist)       # True
+```
+
+## Резюме
+
+- **Итераторы** (`__iter__`, `__next__`) — позволяют перебирать элементы объекта
+- **Контекстные менеджеры** (`__enter__`, `__exit__`) — управляют ресурсами безопасно
+- **Дескрипторы** (`__get__`, `__set__`, `__delete__`) — контролируют доступ к атрибутам
+- **Протокол последовательности** (`__len__`, `__getitem__`) — делает объект похожим на список
+- Протоколы — это способ сделать свои классы более "питоничными" и интегрированными с языком
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ----
 
 # `29` (`*`) Наследование и Полиморфизм
 ## `29.1` Наследование
+[Наследование](https://youtu.be/7WVYqjdMa6U?si=jas4MgS63tp7JNSM)
+
+**Наследование** — это механизм, который позволяет создавать новый класс на основе существующего. Новый класс (дочерний, наследник) получает все атрибуты и методы родительского класса и может добавлять свои или изменять унаследованные.
+
+### Зачем нужно наследование?
+
+1. **Переиспользование кода** — не нужно дублировать одинаковую логику
+2. **Иерархия классов** — создание логической структуры от общего к частному
+3. **Расширяемость** — легко добавлять новую функциональность
+4. **Полиморфизм** — разные классы могут использоваться единообразно
+
+### Базовый синтаксис
+
+```python
+class ParentClass:
+    # Родительский класс
+    pass
+
+class ChildClass(ParentClass):
+    # Дочерний класс наследует ParentClass
+    pass
+```
+
+### Пример 1: Простое наследование — животные
+
+```python
+class Animal:
+    """Базовый класс для всех животных"""
+    
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def make_sound(self):
+        return "Какой-то звук"
+    
+    def info(self):
+        return f"{self.name}, возраст: {self.age} лет"
+
+
+class Dog(Animal):
+    """Собака — наследник Animal"""
+    
+    def __init__(self, name, age, breed):
+        super().__init__(name, age)  # Вызываем конструктор родителя
+        self.breed = breed  # Добавляем новый атрибут
+    
+    def make_sound(self):
+        # Переопределяем метод родителя
+        return "Гав-гав!"
+    
+    def fetch(self):
+        # Добавляем новый метод
+        return f"{self.name} принёс палку!"
+
+
+class Cat(Animal):
+    """Кошка — наследник Animal"""
+    
+    def make_sound(self):
+        return "Мяу!"
+    
+    def scratch(self):
+        return f"{self.name} царапает мебель"
+
+
+# Использование
+dog = Dog("Бобик", 3, "Лабрадор")
+cat = Cat("Мурка", 2)
+
+print(dog.info())          # Бобик, возраст: 3 лет (метод из Animal)
+print(dog.make_sound())    # Гав-гав! (переопределённый метод)
+print(dog.fetch())         # Бобик принёс палку! (новый метод)
+
+print(cat.info())          # Мурка, возраст: 2 лет
+print(cat.make_sound())    # Мяу!
+print(cat.scratch())       # Мурка царапает мебель
+```
+
+### Пример 2: Наследование в реальном проекте — пользователи
+
+```python
+class User:
+    """Базовый класс пользователя"""
+    
+    def __init__(self, username, email):
+        self.username = username
+        self.email = email
+        self.is_active = True
+    
+    def deactivate(self):
+        self.is_active = False
+        print(f"Пользователь {self.username} деактивирован")
+    
+    def __repr__(self):
+        return f"User('{self.username}', '{self.email}')"
+
+
+class Admin(User):
+    """Администратор с расширенными правами"""
+    
+    def __init__(self, username, email, access_level):
+        super().__init__(username, email)
+        self.access_level = access_level
+    
+    def ban_user(self, user):
+        if self.access_level >= 3:
+            user.deactivate()
+            print(f"Админ {self.username} забанил {user.username}")
+        else:
+            print("Недостаточно прав")
+    
+    def __repr__(self):
+        return f"Admin('{self.username}', level={self.access_level})"
+
+
+class Moderator(User):
+    """Модератор с ограниченными правами"""
+    
+    def __init__(self, username, email, sections):
+        super().__init__(username, email)
+        self.sections = sections  # Разделы, которые модерирует
+    
+    def delete_message(self, message_id, section):
+        if section in self.sections:
+            print(f"Модератор {self.username} удалил сообщение {message_id}")
+        else:
+            print(f"Нет прав для модерации раздела {section}")
+
+
+# Использование
+regular_user = User("john_doe", "john@example.com")
+admin = Admin("super_admin", "admin@example.com", access_level=5)
+moderator = Moderator("mod_alice", "alice@example.com", sections=["forum", "chat"])
+
+print(regular_user)  # User('john_doe', 'john@example.com')
+print(admin)         # Admin('super_admin', level=5)
+
+admin.ban_user(regular_user)
+# Админ super_admin забанил john_doe
+# Пользователь john_doe деактивирован
+
+moderator.delete_message(123, "forum")  # OK
+moderator.delete_message(456, "blog")   # Нет прав
+```
+
+### Пример 3: Множественное наследование
+
+Python поддерживает множественное наследование — класс может наследоваться от нескольких родителей.
+
+```python
+class Flyable:
+    """Миксин для летающих объектов"""
+    
+    def fly(self):
+        return f"{self.name} летит!"
+
+
+class Swimmable:
+    """Миксин для плавающих объектов"""
+    
+    def swim(self):
+        return f"{self.name} плывёт!"
+
+
+class Duck(Animal, Flyable, Swimmable):
+    """Утка может и летать, и плавать"""
+    
+    def __init__(self, name, age):
+        super().__init__(name, age)
+    
+    def make_sound(self):
+        return "Кря-кря!"
+
+
+# Использование
+duck = Duck("Дональд", 1)
+print(duck.make_sound())  # Кря-кря!
+print(duck.fly())         # Дональд летит!
+print(duck.swim())        # Дональд плывёт!
+print(duck.info())        # Дональд, возраст: 1 лет
+```
+
+### super() и MRO (Method Resolution Order)
+[Method Resolution Order](https://youtu.be/9YPooWY6x9o?si=nidscOFBEq88o9tZ)
+
+`super()` используется для вызова методов родительского класса. Python определяет порядок поиска методов через **MRO** (Method Resolution Order).
+
+```python
+class A:
+    def method(self):
+        print("Метод A")
+
+
+class B(A):
+    def method(self):
+        print("Метод B")
+        super().method()  # Вызов метода родителя
+
+
+class C(A):
+    def method(self):
+        print("Метод C")
+        super().method()
+
+
+class D(B, C):
+    def method(self):
+        print("Метод D")
+        super().method()
+
+
+# Использование
+obj = D()
+obj.method()
+# Вывод:
+# Метод D
+# Метод B
+# Метод C
+# Метод A
+
+# Посмотреть MRO можно так:
+print(D.__mro__)
+# (<class 'D'>, <class 'B'>, <class 'C'>, <class 'A'>, <class 'object'>)
+```
+
 ## `29.2` Полиморфизм
+[Полиморфизм](https://youtu.be/aEOSBkzNImw?si=Wv7jFcPwqtRNF_zZ)
+
+**Полиморфизм** (от греч. "много форм") — это способность объектов разных классов обрабатываться единообразно, если они имеют одинаковый интерфейс (методы с одинаковыми именами).
+
+### Виды полиморфизма в Python:
+
+1. **Полиморфизм через наследование** — разные классы переопределяют методы родителя
+2. **Утиная типизация** — "если выглядит как утка и крякает как утка, то это утка"
+3. **Перегрузка операторов** — изменение поведения операторов (+, -, ==, и т.д.)
+
+### Пример 1: Полиморфизм через наследование
+
+```python
+class Shape:
+    """Базовый класс для геометрических фигур"""
+    
+    def area(self):
+        raise NotImplementedError("Метод должен быть переопределён")
+    
+    def perimeter(self):
+        raise NotImplementedError("Метод должен быть переопределён")
+
+
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+    
+    def area(self):
+        return self.width * self.height
+    
+    def perimeter(self):
+        return 2 * (self.width + self.height)
+
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+    
+    def area(self):
+        return 3.14159 * self.radius ** 2
+    
+    def perimeter(self):
+        return 2 * 3.14159 * self.radius
+
+
+class Triangle(Shape):
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+    
+    def area(self):
+        # Формула Герона
+        s = (self.a + self.b + self.c) / 2
+        return (s * (s - self.a) * (s - self.b) * (s - self.c)) ** 0.5
+    
+    def perimeter(self):
+        return self.a + self.b + self.c
+
+
+# Полиморфизм в действии
+def print_shape_info(shape):
+    """Функция работает с любой фигурой"""
+    print(f"Площадь: {shape.area():.2f}")
+    print(f"Периметр: {shape.perimeter():.2f}")
+    print()
+
+
+# Использование
+shapes = [
+    Rectangle(5, 3),
+    Circle(4),
+    Triangle(3, 4, 5)
+]
+
+for shape in shapes:
+    print_shape_info(shape)
+# Площадь: 15.00
+# Периметр: 16.00
+#
+# Площадь: 50.27
+# Периметр: 25.13
+#
+# Площадь: 6.00
+# Периметр: 12.00
+```
+
+### Пример 2: Утиная типизация
+
+В Python не обязательно использовать наследование для полиморфизма. Достаточно, чтобы у объектов были нужные методы.
+
+```python
+class EmailNotification:
+    """Уведомление по email"""
+    
+    def send(self, message):
+        print(f"📧 Email: {message}")
+
+
+class SMSNotification:
+    """Уведомление по SMS"""
+    
+    def send(self, message):
+        print(f"📱 SMS: {message}")
+
+
+class PushNotification:
+    """Push-уведомление"""
+    
+    def send(self, message):
+        print(f"🔔 Push: {message}")
+
+
+class TelegramNotification:
+    """Уведомление в Telegram"""
+    
+    def send(self, message):
+        print(f"✈️ Telegram: {message}")
+
+
+# Функция работает с любым объектом, у которого есть метод send()
+def notify_user(notification_service, message):
+    notification_service.send(message)
+
+
+# Использование — все работает без общего родителя!
+notifications = [
+    EmailNotification(),
+    SMSNotification(),
+    PushNotification(),
+    TelegramNotification()
+]
+
+for notifier in notifications:
+    notify_user(notifier, "У вас новое сообщение!")
+
+# 📧 Email: У вас новое сообщение!
+# 📱 SMS: У вас новое сообщение!
+# 🔔 Push: У вас новое сообщение!
+# ✈️ Telegram: У вас новое сообщение!
+```
+
+### Пример 3: Перегрузка операторов
+
+Полиморфизм можно применить к операторам, переопределив специальные методы.
+
+```python
+class Vector:
+    """Математический вектор"""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __add__(self, other):
+        """Перегрузка оператора +"""
+        return Vector(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other):
+        """Перегрузка оператора -"""
+        return Vector(self.x - other.x, self.y - other.y)
+    
+    def __mul__(self, scalar):
+        """Перегрузка оператора * (умножение на число)"""
+        return Vector(self.x * scalar, self.y * scalar)
+    
+    def __eq__(self, other):
+        """Перегрузка оператора =="""
+        return self.x == other.x and self.y == other.y
+    
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+
+
+# Использование
+v1 = Vector(3, 4)
+v2 = Vector(1, 2)
+
+print(v1 + v2)    # Vector(4, 6)
+print(v1 - v2)    # Vector(2, 2)
+print(v1 * 3)     # Vector(9, 12)
+print(v1 == v2)   # False
+print(v1 == Vector(3, 4))  # True
+```
+
+### Пример 4: Полиморфизм в системе оплаты
+
+```python
+class PaymentMethod:
+    """Базовый класс для способов оплаты"""
+    
+    def pay(self, amount):
+        raise NotImplementedError
+
+
+class CreditCard(PaymentMethod):
+    def __init__(self, card_number):
+        self.card_number = card_number[-4:]  # Последние 4 цифры
+    
+    def pay(self, amount):
+        print(f"💳 Оплата {amount}₽ картой **** {self.card_number}")
+        return True
+
+
+class PayPal(PaymentMethod):
+    def __init__(self, email):
+        self.email = email
+    
+    def pay(self, amount):
+        print(f"🅿️ Оплата {amount}₽ через PayPal ({self.email})")
+        return True
+
+
+class Cryptocurrency(PaymentMethod):
+    def __init__(self, wallet_address):
+        self.wallet = wallet_address[:10] + "..."
+    
+    def pay(self, amount):
+        print(f"₿ Оплата {amount}₽ криптовалютой (кошелёк: {self.wallet})")
+        return True
+
+
+class ShoppingCart:
+    """Корзина покупок"""
+    
+    def __init__(self):
+        self.items = []
+    
+    def add_item(self, name, price):
+        self.items.append({"name": name, "price": price})
+    
+    def total(self):
+        return sum(item["price"] for item in self.items)
+    
+    def checkout(self, payment_method):
+        """Оформление заказа с любым способом оплаты"""
+        total = self.total()
+        print(f"\nИтого к оплате: {total}₽")
+        
+        if payment_method.pay(total):
+            print("✅ Оплата прошла успешно!\n")
+            self.items.clear()
+        else:
+            print("❌ Ошибка оплаты\n")
+
+
+# Использование
+cart = ShoppingCart()
+cart.add_item("Ноутбук", 50000)
+cart.add_item("Мышка", 1500)
+
+# Можно использовать любой способ оплаты
+cart.checkout(CreditCard("1234567812345678"))
+# Итого к оплате: 51500₽
+# 💳 Оплата 51500₽ картой **** 5678
+# ✅ Оплата прошла успешно!
+
+cart.add_item("Книга", 500)
+cart.checkout(PayPal("user@example.com"))
+# Итого к оплате: 500₽
+# 🅿️ Оплата 500₽ через PayPal (user@example.com)
+# ✅ Оплата прошла успешно!
+
+cart.add_item("Наушники", 3000)
+cart.checkout(Cryptocurrency("1A2B3C4D5E6F7G8H9I0J"))
+# Итого к оплате: 3000₽
+# ₿ Оплата 3000₽ криптовалютой (кошелёк: 1A2B3C4D5E...)
+# ✅ Оплата прошла успешно!
+```
+
 ## `29.3` Абстрактные классы и протоколы
-## `29.4` Generics
+[ABC & Protocol (на русском)](https://youtu.be/gYohffh1NaU?si=WzBf7_S5XhRb6-67)
+[ABC & Protocol](https://youtu.be/dryNwWvSd4M?si=qeqoM5g0edk9tFoo)
+
+### Абстрактные классы (ABC)
+
+**Абстрактный класс** — это класс, который нельзя создать напрямую. Он служит шаблоном для других классов и определяет обязательные методы, которые должны быть реализованы в наследниках.
+
+```python
+from abc import ABC, abstractmethod
+
+class AbstractClass(ABC):
+    @abstractmethod
+    def required_method(self):
+        pass
+```
+
+### Пример 1: Абстрактный класс для БД
+
+```python
+from abc import ABC, abstractmethod
+
+class Database(ABC):
+    """Абстрактный класс для работы с базами данных"""
+    
+    @abstractmethod
+    def connect(self):
+        """Подключение к БД"""
+        pass
+    
+    @abstractmethod
+    def disconnect(self):
+        """Отключение от БД"""
+        pass
+    
+    @abstractmethod
+    def execute(self, query):
+        """Выполнение запроса"""
+        pass
+    
+    def log(self, message):
+        """Конкретный метод, доступный всем наследникам"""
+        print(f"[LOG] {message}")
+
+
+class PostgreSQL(Database):
+    def connect(self):
+        self.log("Подключение к PostgreSQL")
+        self.connection = "PostgreSQL connection"
+    
+    def disconnect(self):
+        self.log("Отключение от PostgreSQL")
+        self.connection = None
+    
+    def execute(self, query):
+        self.log(f"Выполнение SQL: {query}")
+        return f"Результат для PostgreSQL: {query}"
+
+
+class MongoDB(Database):
+    def connect(self):
+        self.log("Подключение к MongoDB")
+        self.connection = "MongoDB connection"
+    
+    def disconnect(self):
+        self.log("Отключение от MongoDB")
+        self.connection = None
+    
+    def execute(self, query):
+        self.log(f"Выполнение запроса: {query}")
+        return f"Результат для MongoDB: {query}"
+
+
+# Использование
+def work_with_database(db: Database):
+    """Функция работает с любой БД"""
+    db.connect()
+    result = db.execute("SELECT * FROM users")
+    print(result)
+    db.disconnect()
+    print()
+
+
+postgres = PostgreSQL()
+mongo = MongoDB()
+
+work_with_database(postgres)
+# [LOG] Подключение к PostgreSQL
+# [LOG] Выполнение SQL: SELECT * FROM users
+# Результат для PostgreSQL: SELECT * FROM users
+# [LOG] Отключение от PostgreSQL
+
+work_with_database(mongo)
+# [LOG] Подключение к MongoDB
+# [LOG] Выполнение запроса: SELECT * FROM users
+# Результат для MongoDB: SELECT * FROM users
+# [LOG] Отключение от MongoDB
+
+# Попытка создать экземпляр абстрактного класса вызовет ошибку
+try:
+    db = Database()
+except TypeError as e:
+    print(f"Ошибка: {e}")
+# Ошибка: Can't instantiate abstract class Database with abstract methods connect, disconnect, execute
+```
+
+### Пример 2: Абстрактный класс для экспорта данных
+
+```python
+from abc import ABC, abstractmethod
+import json
+import csv
+
+class DataExporter(ABC):
+    """Абстрактный класс для экспорта данных"""
+    
+    def __init__(self, data):
+        self.data = data
+    
+    @abstractmethod
+    def export(self, filename):
+        """Экспорт данных в файл"""
+        pass
+    
+    def validate_data(self):
+        """Общая валидация для всех экспортёров"""
+        if not self.data:
+            raise ValueError("Данные пусты!")
+        return True
+
+
+class JSONExporter(DataExporter):
+    def export(self, filename):
+        self.validate_data()
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=2)
+        print(f"✅ Данные экспортированы в {filename} (JSON)")
+
+
+class CSVExporter(DataExporter):
+    def export(self, filename):
+        self.validate_data()
+        with open(filename, 'w', encoding='utf-8', newline='') as f:
+            if isinstance(self.data, list) and self.data:
+                writer = csv.DictWriter(f, fieldnames=self.data[0].keys())
+                writer.writeheader()
+                writer.writerows(self.data)
+        print(f"✅ Данные экспортированы в {filename} (CSV)")
+
+
+class XMLExporter(DataExporter):
+    def export(self, filename):
+        self.validate_data()
+        # Упрощённая реализация XML
+        xml_content = "<data>\n"
+        for item in self.data:
+            xml_content += "  <item>\n"
+            for key, value in item.items():
+                xml_content += f"    <{key}>{value}</{key}>\n"
+            xml_content += "  </item>\n"
+        xml_content += "</data>"
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(xml_content)
+        print(f"✅ Данные экспортированы в {filename} (XML)")
+
+
+# Использование
+data = [
+    {"name": "Иван", "age": 25, "city": "Москва"},
+    {"name": "Мария", "age": 30, "city": "Санкт-Петербург"}
+]
+
+exporters = [
+    JSONExporter(data),
+    CSVExporter(data),
+    XMLExporter(data)
+]
+
+for i, exporter in enumerate(exporters, 1):
+    exporter.export(f"output_{i}.txt")
+
+# ✅ Данные экспортированы в output_1.txt (JSON)
+# ✅ Данные экспортированы в output_2.txt (CSV)
+# ✅ Данные экспортированы в output_3.txt (XML)
+```
+
+### Протоколы (Protocol) — структурная типизация
+
+**Протоколы** (появились в Python 3.8) — это способ определить интерфейс без явного наследования. Класс удовлетворяет протоколу, если у него есть нужные методы.
+
+```python
+from typing import Protocol
+
+class Drawable(Protocol):
+    """Протокол для объектов, которые можно рисовать"""
+    
+    def draw(self) -> None:
+        ...
+
+
+# Классы НЕ наследуют Drawable, но соответствуют протоколу
+class Circle:
+    def draw(self):
+        print("Рисуем круг ⭕")
+
+
+class Square:
+    def draw(self):
+        print("Рисуем квадрат ⬜")
+
+
+class Text:
+    def draw(self):
+        print("Рисуем текст 📝")
+
+
+def render(obj: Drawable):
+    """Функция работает с любым объектом, соответствующим протоколу"""
+    obj.draw()
+
+
+# Использование
+shapes = [Circle(), Square(), Text()]
+
+for shape in shapes:
+    render(shape)
+
+# Рисуем круг ⭕
+# Рисуем квадрат ⬜
+# Рисуем текст 📝
+```
+
+### Пример 3: Протокол для логирования
+
+```python
+from typing import Protocol
+
+class Logger(Protocol):
+    """Протокол для логгеров"""
+    
+    def log(self, message: str) -> None:
+        ...
+
+
+class ConsoleLogger:
+    def log(self, message: str):
+        print(f"[CONSOLE] {message}")
+
+
+class FileLogger:
+    def __init__(self, filename):
+        self.filename = filename
+    
+    def log(self, message: str):
+        with open(self.filename, 'a', encoding='utf-8') as f:
+            f.write(f"{message}\n")
+        print(f"[FILE] Записано в {self.filename}")
+
+
+class DatabaseLogger:
+    def log(self, message: str):
+        # Имитация записи в БД
+        print(f"[DB] Сохранено в БД: {message}")
+
+
+class Application:
+    """Приложение может работать с любым логгером"""
+    
+    def __init__(self, logger: Logger):
+        self.logger = logger
+    
+    def run(self):
+        self.logger.log("Приложение запущено")
+        self.logger.log("Выполнение задачи...")
+        self.logger.log("Приложение завершено")
+
+
+# Использование
+print("=== Console Logger ===")
+app1 = Application(ConsoleLogger())
+app1.run()
+
+print("\n=== File Logger ===")
+app2 = Application(FileLogger("app.log"))
+app2.run()
+
+print("\n=== Database Logger ===")
+app3 = Application(DatabaseLogger())
+app3.run()
+```
+
+## `29.4` (`**`) Generics
+[Generics](https://youtu.be/hVulW66JboQ?si=dZMUg-qfSWPxoNBQ)
+
+**Generics (обобщённые типы)** позволяют создавать классы и функции, которые работают с разными типами данных, сохраняя при этом типобезопасность.
+
+```python
+from typing import TypeVar, Generic, List
+
+T = TypeVar('T')  # Объявляем переменную типа
+```
+
+### Пример 1: Обобщённый стек
+
+```python
+from typing import TypeVar, Generic, List
+
+T = TypeVar('T')
+
+class Stack(Generic[T]):
+    """Обобщённый стек для любого типа данных"""
+    
+    def __init__(self):
+        self._items: List[T] = []
+    
+    def push(self, item: T) -> None:
+        """Добавить элемент в стек"""
+        self._items.append(item)
+    
+    def pop(self) -> T:
+        """Извлечь элемент из стека"""
+        if self.is_empty():
+            raise IndexError("Стек пуст")
+        return self._items.pop()
+    
+    def peek(self) -> T:
+        """Посмотреть верхний элемент без извлечения"""
+        if self.is_empty():
+            raise IndexError("Стек пуст")
+        return self._items[-1]
+    
+    def is_empty(self) -> bool:
+        return len(self._items) == 0
+    
+    def size(self) -> int:
+        return len(self._items)
+    
+    def __repr__(self):
+        return f"Stack({self._items})"
+
+
+# Использование с разными типами
+int_stack = Stack[int]()
+int_stack.push(1)
+int_stack.push(2)
+int_stack.push(3)
+print(int_stack)          # Stack([1, 2, 3])
+print(int_stack.pop())    # 3
+
+str_stack = Stack[str]()
+str_stack.push("Hello")
+str_stack.push("World")
+print(str_stack)          # Stack(['Hello', 'World'])
+print(str_stack.peek())   # World
+```
+
+### Пример 2: Обобщённая пара (Pair)
+
+```python
+from typing import TypeVar, Generic
+
+T = TypeVar('T')
+U = TypeVar('U')
+
+class Pair(Generic[T, U]):
+    """Пара значений разных типов"""
+    
+    def __init__(self, first: T, second: U):
+        self.first = first
+        self.second = second
+    
+    def get_first(self) -> T:
+        return self.first
+    
+    def get_second(self) -> U:
+        return self.second
+    
+    def swap(self) -> 'Pair[U, T]':
+        """Меняет местами элементы пары"""
+        return Pair(self.second, self.first)
+    
+    def __repr__(self):
+        return f"Pair({self.first}, {self.second})"
+
+
+# Использование
+pair1 = Pair[str, int]("возраст", 25)
+print(pair1)                    # Pair(возраст, 25)
+print(pair1.get_first())        # возраст
+print(pair1.get_second())       # 25
+
+pair2 = Pair[int, str](404, "Not Found")
+print(pair2)                    # Pair(404, Not Found)
+
+swapped = pair2.swap()
+print(swapped)                  # Pair(Not Found, 404)
+```
+
+### Пример 3: Обобщённый репозиторий
+
+```python
+from typing import TypeVar, Generic, List, Optional, Protocol
+
+class Identifiable(Protocol):
+    """Протокол для объектов с ID"""
+    id: int
+
+
+T = TypeVar('T', bound=Identifiable)
+
+class Repository(Generic[T]):
+    """Обобщённый репозиторий для хранения объектов"""
+    
+    def __init__(self):
+        self._storage: List[T] = []
+        self._next_id = 1
+    
+    def add(self, item: T) -> T:
+        """Добавить объект"""
+        item.id = self._next_id
+        self._next_id += 1
+        self._storage.append(item)
+        return item
+    
+    def get_by_id(self, item_id: int) -> Optional[T]:
+        """Получить объект по ID"""
+        for item in self._storage:
+            if item.id == item_id:
+                return item
+        return None
+    
+    def get_all(self) -> List[T]:
+        """Получить все объекты"""
+        return self._storage.copy()
+    
+    def delete(self, item_id: int) -> bool:
+        """Удалить объект по ID"""
+        for i, item in enumerate(self._storage):
+            if item.id == item_id:
+                del self._storage[i]
+                return True
+        return False
+    
+    def update(self, item: T) -> bool:
+        """Обновить объект"""
+        for i, stored_item in enumerate(self._storage):
+            if stored_item.id == item.id:
+                self._storage[i] = item
+                return True
+        return False
+    
+    def count(self) -> int:
+        """Количество объектов"""
+        return len(self._storage)
+
+
+# Модели данных
+class User:
+    def __init__(self, name: str, email: str):
+        self.id = 0  # Будет установлен репозиторием
+        self.name = name
+        self.email = email
+    
+    def __repr__(self):
+        return f"User(id={self.id}, name='{self.name}', email='{self.email}')"
+
+
+class Product:
+    def __init__(self, title: str, price: float):
+        self.id = 0
+        self.title = title
+        self.price = price
+    
+    def __repr__(self):
+        return f"Product(id={self.id}, title='{self.title}', price={self.price})"
+
+
+# Использование
+user_repo = Repository[User]()
+product_repo = Repository[Product]()
+
+# Работа с пользователями
+user1 = user_repo.add(User("Иван", "ivan@example.com"))
+user2 = user_repo.add(User("Мария", "maria@example.com"))
+print(f"Создано пользователей: {user_repo.count()}")  # 2
+print(user_repo.get_all())
+# [User(id=1, name='Иван', email='ivan@example.com'), 
+#  User(id=2, name='Мария', email='maria@example.com')]
+
+# Работа с продуктами
+product1 = product_repo.add(Product("Ноутбук", 50000))
+product2 = product_repo.add(Product("Мышка", 1500))
+print(f"\nСоздано товаров: {product_repo.count()}")  # 2
+
+# Получение по ID
+user = user_repo.get_by_id(1)
+print(f"\nНайден пользователь: {user}")  # User(id=1, name='Иван', ...)
+
+# Удаление
+user_repo.delete(2)
+print(f"Осталось пользователей: {user_repo.count()}")  # 1
+```
+
+### Пример 4: Обобщённая функция
+
+```python
+from typing import TypeVar, List, Callable
+
+T = TypeVar('T')
+
+def filter_items(items: List[T], predicate: Callable[[T], bool]) -> List[T]:
+    """Обобщённая функция фильтрации"""
+    return [item for item in items if predicate(item)]
+
+
+def map_items(items: List[T], transformer: Callable[[T], T]) -> List[T]:
+    """Обобщённая функция преобразования"""
+    return [transformer(item) for item in items]
+
+
+# Использование с числами
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+even_numbers = filter_items(numbers, lambda x: x % 2 == 0)
+print(even_numbers)  # [2, 4, 6, 8, 10]
+
+squared = map_items(numbers, lambda x: x ** 2)
+print(squared)  # [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+
+# Использование со строками
+words = ["apple", "banana", "cherry", "date"]
+long_words = filter_items(words, lambda w: len(w) > 5)
+print(long_words)  # ['banana', 'cherry']
+
+uppercase = map_items(words, lambda w: w.upper())
+print(uppercase)  # ['APPLE', 'BANANA', 'CHERRY', 'DATE']
+```
+
 ## `29.5` Композиция
+[Композиция](https://youtu.be/7xSDYgktsqY?si=4JtviBueKZCk7-Tf)
+
+**Композиция** — это альтернатива наследованию, где один класс содержит экземпляры других классов. Это реализует принцип "имеет" (has-a) вместо "является" (is-a).
+
+### Наследование vs Композиция
+
+**Наследование (is-a):**
+- Собака **является** животным
+- Жёсткая связь между классами
+- Изменения в родителе влияют на детей
+
+**Композиция (has-a):**
+- Машина **имеет** двигатель
+- Гибкая связь, легко заменить компоненты
+- Изменения в одном компоненте не влияют на другие
+
+### Пример 1: Композиция — автомобиль
+
+```python
+class Engine:
+    """Двигатель"""
+    
+    def __init__(self, horsepower, fuel_type):
+        self.horsepower = horsepower
+        self.fuel_type = fuel_type
+        self.is_running = False
+    
+    def start(self):
+        self.is_running = True
+        print(f"🔥 Двигатель запущен ({self.horsepower} л.с., {self.fuel_type})")
+    
+    def stop(self):
+        self.is_running = False
+        print("⛔ Двигатель остановлен")
+
+
+class Transmission:
+    """Трансмиссия"""
+    
+    def __init__(self, transmission_type):
+        self.type = transmission_type  # "автомат", "механика"
+        self.gear = 0
+    
+    def shift_up(self):
+        self.gear += 1
+        print(f"⚙️ Переключение на {self.gear} передачу")
+    
+    def shift_down(self):
+        if self.gear > 0:
+            self.gear -= 1
+            print(f"⚙️ Переключение на {self.gear} передачу")
+
+
+class GPS:
+    """GPS навигация"""
+    
+    def __init__(self):
+        self.destination = None
+    
+    def set_destination(self, place):
+        self.destination = place
+        print(f"🗺️ Маршрут построен до: {place}")
+    
+    def navigate(self):
+        if self.destination:
+            print(f"🧭 Навигация к {self.destination}")
+        else:
+            print("❌ Пункт назначения не задан")
+
+
+class Car:
+    """Автомобиль использует композицию"""
+    
+    def __init__(self, model, engine, transmission, has_gps=False):
+        self.model = model
+        self.engine = engine  # Композиция: машина ИМЕЕТ двигатель
+        self.transmission = transmission  # Композиция: машина ИМЕЕТ трансмиссию
+        self.gps = GPS() if has_gps else None  # Опциональный компонент
+    
+    def start_journey(self):
+        print(f"\n🚗 {self.model} готовится к поездке")
+        self.engine.start()
+        if self.gps:
+            self.gps.navigate()
+    
+    def drive(self):
+        if self.engine.is_running:
+            self.transmission.shift_up()
+            print("🏎️ Автомобиль движется")
+        else:
+            print("❌ Сначала запустите двигатель!")
+    
+    def stop_journey(self):
+        print(f"\n🛑 {self.model} завершает поездку")
+        self.engine.stop()
+
+
+# Использование
+# Создаём компоненты отдельно
+v8_engine = Engine(450, "бензин")
+auto_transmission = Transmission("автомат")
+
+# Собираем машину из компонентов
+bmw = Car("BMW X5", v8_engine, auto_transmission, has_gps=True)
+
+bmw.gps.set_destination("Аэропорт Шереметьево")
+bmw.start_journey()
+bmw.drive()
+bmw.drive()
+bmw.stop_journey()
+
+# Вывод:
+# 🗺️ Маршрут построен до: Аэропорт Шереметьево
+# 
+# 🚗 BMW X5 готовится к поездке
+# 🔥 Двигатель запущен (450 л.с., бензин)
+# 🧭 Навигация к Аэропорт Шереметьево
+# ⚙️ Переключение на 1 передачу
+# 🏎️ Автомобиль движется
+# ⚙️ Переключение на 2 передачу
+# 🏎️ Автомобиль движется
+# 
+# 🛑 BMW X5 завершает поездку
+# ⛔ Двигатель остановлен
+
+# Можем легко создать другую машину с другими компонентами
+electric_engine = Engine(300, "электричество")
+manual_transmission = Transmission("механика")
+tesla = Car("Tesla Model 3", electric_engine, manual_transmission, has_gps=True)
+```
+
+### Пример 2: Композиция — компьютер
+
+```python
+class CPU:
+    """Процессор"""
+    
+    def __init__(self, model, cores, frequency):
+        self.model = model
+        self.cores = cores
+        self.frequency = frequency
+    
+    def process(self, task):
+        print(f"🔷 {self.model} ({self.cores} ядер, {self.frequency} ГГц) обрабатывает: {task}")
+
+
+class RAM:
+    """Оперативная память"""
+    
+    def __init__(self, size_gb):
+        self.size = size_gb
+        self.used = 0
+    
+    def allocate(self, amount_gb):
+        if self.used + amount_gb <= self.size:
+            self.used += amount_gb
+            print(f"💾 Выделено {amount_gb} ГБ ОЗУ (всего используется: {self.used}/{self.size} ГБ)")
+        else:
+            print(f"❌ Недостаточно памяти! Доступно: {self.size - self.used} ГБ")
+    
+    def free(self, amount_gb):
+        self.used = max(0, self.used - amount_gb)
+        print(f"💾 Освобождено {amount_gb} ГБ ОЗУ")
+
+
+class Storage:
+    """Хранилище данных"""
+    
+    def __init__(self, storage_type, capacity_gb):
+        self.type = storage_type  # "SSD", "HDD"
+        self.capacity = capacity_gb
+        self.used = 0
+    
+    def save_file(self, filename, size_gb):
+        if self.used + size_gb <= self.capacity:
+            self.used += size_gb
+            print(f"💽 Файл '{filename}' сохранён на {self.type} ({size_gb} ГБ)")
+        else:
+            print(f"❌ Недостаточно места на диске!")
+
+
+class GPU:
+    """Видеокарта (опциональный компонент)"""
+    
+    def __init__(self, model, vram_gb):
+        self.model = model
+        self.vram = vram_gb
+    
+    def render(self, scene):
+        print(f"🎮 {self.model} ({self.vram} ГБ VRAM) рендерит: {scene}")
+
+
+class Computer:
+    """Компьютер собран из компонентов через композицию"""
+    
+    def __init__(self, name, cpu, ram, storage, gpu=None):
+        self.name = name
+        self.cpu = cpu
+        self.ram = ram
+        self.storage = storage
+        self.gpu = gpu  # Опциональный компонент
+        self.is_on = False
+    
+    def power_on(self):
+        self.is_on = True
+        print(f"\n💻 {self.name} включается...")
+        print(f"   CPU: {self.cpu.model}")
+        print(f"   RAM: {self.ram.size} ГБ")
+        print(f"   Storage: {self.storage.type} {self.storage.capacity} ГБ")
+        if self.gpu:
+            print(f"   GPU: {self.gpu.model}")
+    
+    def run_application(self, app_name, ram_needed, storage_needed):
+        if not self.is_on:
+            print("❌ Компьютер выключен!")
+            return
+        
+        print(f"\n▶️ Запуск приложения: {app_name}")
+        self.cpu.process(app_name)
+        self.ram.allocate(ram_needed)
+        self.storage.save_file(f"{app_name}_data", storage_needed)
+    
+    def play_game(self, game_name):
+        if not self.gpu:
+            print("❌ Видеокарта не установлена!")
+            return
+        
+        print(f"\n🎮 Запуск игры: {game_name}")
+        self.cpu.process(f"игровая логика {game_name}")
+        self.gpu.render(f"сцена из {game_name}")
+        self.ram.allocate(4)
+
+
+# Использование
+
+# Офисный компьютер (без видеокарты)
+office_pc = Computer(
+    "Офисный ПК",
+    CPU("Intel i5", 6, 3.2),
+    RAM(16),
+    Storage("SSD", 512)
+)
+
+office_pc.power_on()
+office_pc.run_application("Microsoft Word", ram_needed=2, storage_needed=0.5)
+office_pc.run_application("Chrome", ram_needed=4, storage_needed=1)
+
+# Вывод:
+# 💻 Офисный ПК включается...
+#    CPU: Intel i5
+#    RAM: 16 ГБ
+#    Storage: SSD 512 ГБ
+# 
+# ▶️ Запуск приложения: Microsoft Word
+# 🔷 Intel i5 (6 ядер, 3.2 ГГц) обрабатывает: Microsoft Word
+# 💾 Выделено 2 ГБ ОЗУ (всего используется: 2/16 ГБ)
+# 💽 Файл 'Microsoft Word_data' сохранён на SSD (0.5 ГБ)
+# 
+# ▶️ Запуск приложения: Chrome
+# 🔷 Intel i5 (6 ядер, 3.2 ГГц) обрабатывает: Chrome
+# 💾 Выделено 4 ГБ ОЗУ (всего используется: 6/16 ГБ)
+# 💽 Файл 'Chrome_data' сохранён на SSD (1 ГБ)
+
+# Игровой компьютер (с видеокартой)
+gaming_pc = Computer(
+    "Игровой ПК",
+    CPU("AMD Ryzen 9", 16, 4.5),
+    RAM(32),
+    Storage("SSD", 2000),
+    GPU("NVIDIA RTX 4090", 24)
+)
+
+gaming_pc.power_on()
+gaming_pc.play_game("Cyberpunk 2077")
+
+# Вывод:
+# 💻 Игровой ПК включается...
+#    CPU: AMD Ryzen 9
+#    RAM: 32 ГБ
+#    Storage: SSD 2000 ГБ
+#    GPU: NVIDIA RTX 4090
+# 
+# 🎮 Запуск игры: Cyberpunk 2077
+# 🔷 AMD Ryzen 9 (16 ядер, 4.5 ГГц) обрабатывает: игровая логика Cyberpunk 2077
+# 🎮 NVIDIA RTX 4090 (24 ГБ VRAM) рендерит: сцена из Cyberpunk 2077
+# 💾 Выделено 4 ГБ ОЗУ (всего используется: 4/32 ГБ)
+```
+
+### Пример 3: Композиция vs Наследование — сравнение
+
+```python
+# ❌ ПЛОХО: Использование наследования там, где нужна композиция
+
+class Bird:
+    def fly(self):
+        print("Птица летит")
+
+
+class Penguin(Bird):
+    # Проблема: пингвин не может летать!
+    def fly(self):
+        raise NotImplementedError("Пингвины не летают!")
+
+
+# ✅ ХОРОШО: Использование композиции
+
+class FlyingAbility:
+    """Способность летать как отдельный компонент"""
+    
+    def fly(self):
+        print("✈️ Летит в небе")
+
+
+class SwimmingAbility:
+    """Способность плавать как отдельный компонент"""
+    
+    def swim(self):
+        print("🏊 Плывёт в воде")
+
+
+class WalkingAbility:
+    """Способность ходить как отдельный компонент"""
+    
+    def walk(self):
+        print("🚶 Идёт по земле")
+
+
+class Animal:
+    """Базовый класс животного"""
+    
+    def __init__(self, name):
+        self.name = name
+        self.abilities = []
+    
+    def add_ability(self, ability):
+        self.abilities.append(ability)
+    
+    def perform_actions(self):
+        print(f"\n{self.name}:")
+        for ability in self.abilities:
+            if hasattr(ability, 'fly'):
+                ability.fly()
+            if hasattr(ability, 'swim'):
+                ability.swim()
+            if hasattr(ability, 'walk'):
+                ability.walk()
+
+
+# Создаём разных животных с разными способностями
+eagle = Animal("Орёл")
+eagle.add_ability(FlyingAbility())
+eagle.add_ability(WalkingAbility())
+
+penguin = Animal("Пингвин")
+penguin.add_ability(SwimmingAbility())
+penguin.add_ability(WalkingAbility())
+
+duck = Animal("Утка")
+duck.add_ability(FlyingAbility())
+duck.add_ability(SwimmingAbility())
+duck.add_ability(WalkingAbility())
+
+fish = Animal("Рыба")
+fish.add_ability(SwimmingAbility())
+
+# Демонстрация
+for animal in [eagle, penguin, duck, fish]:
+    animal.perform_actions()
+
+# Вывод:
+# Орёл:
+# ✈️ Летит в небе
+# 🚶 Идёт по земле
+# 
+# Пингвин:
+# 🏊 Плывёт в воде
+# 🚶 Идёт по земле
+# 
+# Утка:
+# ✈️ Летит в небе
+# 🏊 Плывёт в воде
+# 🚶 Идёт по земле
+# 
+# Рыба:
+# 🏊 Плывёт в воде
+```
+
+### Пример 4: Реальный кейс — система уведомлений
+
+```python
+class EmailSender:
+    """Компонент для отправки email"""
+    
+    def send(self, recipient, message):
+        print(f"📧 Email отправлен на {recipient}: {message}")
+
+
+class SMSSender:
+    """Компонент для отправки SMS"""
+    
+    def send(self, phone, message):
+        print(f"📱 SMS отправлено на {phone}: {message}")
+
+
+class PushSender:
+    """Компонент для отправки push-уведомлений"""
+    
+    def send(self, device_id, message):
+        print(f"🔔 Push отправлен на устройство {device_id}: {message}")
+
+
+class Logger:
+    """Компонент для логирования"""
+    
+    def log(self, message):
+        print(f"📝 [LOG] {message}")
+
+
+class NotificationService:
+    """Сервис уведомлений использует композицию"""
+    
+    def __init__(self, email_sender=None, sms_sender=None, push_sender=None, logger=None):
+        self.email_sender = email_sender
+        self.sms_sender = sms_sender
+        self.push_sender = push_sender
+        self.logger = logger
+    
+    def notify(self, user, message, channels):
+        """Отправить уведомление по выбранным каналам"""
+        if self.logger:
+            self.logger.log(f"Отправка уведомления пользователю {user['name']}")
+        
+        if 'email' in channels and self.email_sender:
+            self.email_sender.send(user['email'], message)
+        
+        if 'sms' in channels and self.sms_sender:
+            self.sms_sender.send(user['phone'], message)
+        
+        if 'push' in channels and self.push_sender:
+            self.push_sender.send(user['device_id'], message)
+        
+        print()
+
+
+# Использование — легко настроить разные конфигурации
+
+# Полная конфигурация со всеми компонентами
+full_service = NotificationService(
+    email_sender=EmailSender(),
+    sms_sender=SMSSender(),
+    push_sender=PushSender(),
+    logger=Logger()
+)
+
+user1 = {
+    'name': 'Иван',
+    'email': 'ivan@example.com',
+    'phone': '+79001234567',
+    'device_id': 'device_123'
+}
+
+full_service.notify(user1, "Ваш заказ готов!", channels=['email', 'sms', 'push'])
+
+# Вывод:
+# 📝 [LOG] Отправка уведомления пользователю Иван
+# 📧 Email отправлен на ivan@example.com: Ваш заказ готов!
+# 📱 SMS отправлено на +79001234567: Ваш заказ готов!
+# 🔔 Push отправлен на устройство device_123: Ваш заказ готов!
+
+# Минимальная конфигурация — только email
+minimal_service = NotificationService(email_sender=EmailSender())
+
+user2 = {
+    'name': 'Мария',
+    'email': 'maria@example.com',
+    'phone': '+79007654321',
+    'device_id': 'device_456'
+}
+
+minimal_service.notify(user2, "Добро пожаловать!", channels=['email', 'sms'])
+# Вывод:
+# 📧 Email отправлен на maria@example.com: Добро пожаловать!
+# (SMS не отправлено, т.к. компонент не подключён)
+```
+
+
+## Когда использовать что?
+
+### Используй наследование когда:
+- Есть отношение **"является"** (is-a)
+  - Собака **является** животным
+  - Квадрат **является** фигурой
+- Нужно переиспользовать код из базового класса
+- Дочерние классы — это специализация родительского
+
+### Используй композицию когда:
+- Есть отношение **"имеет"** (has-a)
+  - Машина **имеет** двигатель
+  - Компьютер **имеет** процессор
+- Нужна гибкость и возможность заменить компоненты
+- Требуется комбинировать разные возможности
+- Хочешь избежать сложных иерархий наследования
+
+### Используй абстрактные классы когда:
+- Нужно определить обязательный интерфейс для наследников
+- Хочешь гарантировать, что все дочерние классы реализуют определённые методы
+- Создаёшь фреймворк или библиотеку
+
+### Используй протоколы когда:
+- Нужна структурная типизация без явного наследования
+- Работаешь с утиной типизацией, но хочешь типобезопасность
+- Хочешь проверять наличие методов статически (через mypy)
+
+
+## Резюме
+
+- **Наследование** — создание новых классов на основе существующих (отношение "является")
+- **Полиморфизм** — единообразная работа с объектами разных классов через общий интерфейс
+- **Абстрактные классы** — шаблоны с обязательными методами для наследников
+- **Протоколы** — структурная типизация без явного наследования
+- **Generics** — создание обобщённых типов для работы с разными данными
+- **Композиция** — построение сложных объектов из простых компонентов (отношение "имеет")
+
+**Правило**: Предпочитай композицию наследованию (Composition over Inheritance) — это делает код более гибким и легче тестируемым!
 
 ----
 
 # `30` (`*`) Extra OOP
 ## `30.1` `__slots__`, `__dict__`
+### `__dict__` — словарь атрибутов
+
+По умолчанию Python хранит атрибуты объекта в специальном словаре `__dict__`. Это даёт гибкость — можно динамически добавлять и удалять атрибуты, но требует больше памяти.
+
+```python
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+person = Person("Иван", 25)
+
+# Доступ к словарю атрибутов
+print(person.__dict__)  # {'name': 'Иван', 'age': 25}
+
+# Можно динамически добавлять атрибуты
+person.city = "Москва"
+print(person.__dict__)  # {'name': 'Иван', 'age': 25, 'city': 'Москва'}
+
+# Можно изменять через __dict__
+person.__dict__['email'] = 'ivan@example.com'
+print(person.email)  # ivan@example.com
+```
+
+### `__slots__` — оптимизация памяти
+[СЛОТЫ В ПИТОНЕ!!!](https://habr.com/ru/articles/686220/)
+
+`__slots__` позволяет явно указать, какие атрибуты может иметь класс. Это:
+- **Экономит память** (особенно при создании тысяч объектов)
+- **Ускоряет доступ** к атрибутам
+- **Запрещает** динамическое добавление новых атрибутов
+
+```python
+class OptimizedPerson:
+    __slots__ = ('name', 'age')  # Только эти атрибуты разрешены
+    
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+person = OptimizedPerson("Мария", 30)
+print(person.name, person.age)  # Мария 30
+
+# У объекта больше нет __dict__
+try:
+    print(person.__dict__)
+except AttributeError as e:
+    print(f"Ошибка: {e}")  # 'OptimizedPerson' object has no attribute '__dict__'
+
+# Нельзя добавить новый атрибут
+try:
+    person.city = "Санкт-Петербург"
+except AttributeError as e:
+    print(f"Ошибка: {e}")  # 'OptimizedPerson' object has no attribute 'city'
+```
+
+### Пример 1: Сравнение памяти с `__slots__` и без
+
+```python
+import sys
+
+class RegularPoint:
+    """Обычный класс с __dict__"""
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class OptimizedPoint:
+    """Класс с __slots__"""
+    __slots__ = ('x', 'y')
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+# Создаём объекты
+regular = RegularPoint(10, 20)
+optimized = OptimizedPoint(10, 20)
+
+# Сравниваем размер в памяти
+print(f"Размер RegularPoint: {sys.getsizeof(regular.__dict__)} байт")
+print(f"Размер OptimizedPoint: {sys.getsizeof(optimized)} байт")
+
+# При создании миллиона объектов разница будет огромной!
+import time
+
+# Тест: создание 1 миллиона обычных объектов
+start = time.time()
+regular_objects = [RegularPoint(i, i*2) for i in range(1_000_000)]
+regular_time = time.time() - start
+
+# Тест: создание 1 миллиона оптимизированных объектов
+start = time.time()
+optimized_objects = [OptimizedPoint(i, i*2) for i in range(1_000_000)]
+optimized_time = time.time() - start
+
+print(f"\n⏱️ Создание 1 млн RegularPoint: {regular_time:.3f} сек")
+print(f"⏱️ Создание 1 млн OptimizedPoint: {optimized_time:.3f} сек")
+print(f"⚡ Ускорение: {regular_time / optimized_time:.2f}x")
+```
+
+### Пример 2: `__slots__` с наследованием
+
+```python
+class Animal:
+    __slots__ = ('name', 'age')
+    
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+class Dog(Animal):
+    # Добавляем дополнительные слоты для дочернего класса
+    __slots__ = ('breed',)
+    
+    def __init__(self, name, age, breed):
+        super().__init__(name, age)
+        self.breed = breed
+
+dog = Dog("Бобик", 3, "Лабрадор")
+print(f"{dog.name}, {dog.age} лет, порода: {dog.breed}")
+
+# Доступны только атрибуты из slots родителя и дочернего класса
+try:
+    dog.color = "чёрный"
+except AttributeError as e:
+    print(f"Ошибка: {e}")
+```
+
+### Пример 3: Когда НЕ использовать `__slots__`
+
+```python
+class ConfigurableObject:
+    """Объект, который должен поддерживать динамические атрибуты"""
+    # НЕ используем __slots__, т.к. нужна гибкость
+    
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+# Пользователь может добавлять любые атрибуты
+config = ConfigurableObject(host="localhost", port=8080, debug=True)
+print(config.host, config.port, config.debug)  # localhost 8080 True
+
+# Легко добавляем новые параметры
+config.timeout = 30
+config.max_connections = 100
+print(config.timeout)  # 30
+```
+
 ## `30.2` Enum
+[Enum в Python](https://habr.com/ru/companies/timeweb/articles/564826/)
+
+**Enum (перечисление)** — это класс для создания именованных констант. Помогает избежать "магических чисел" и строк в коде, делая его более читаемым и безопасным.
+
+### Базовое использование
+
+```python
+from enum import Enum
+
+class Color(Enum):
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+
+# Доступ к элементам
+print(Color.RED)        # Color.RED
+print(Color.RED.name)   # RED
+print(Color.RED.value)  # 1
+
+# Сравнение
+print(Color.RED == Color.GREEN)  # False
+print(Color.RED is Color.RED)    # True
+
+# Итерация
+for color in Color:
+    print(f"{color.name} = {color.value}")
+# RED = 1
+# GREEN = 2
+# BLUE = 3
+```
+
+### Пример 1: Статусы заказа
+
+```python
+from enum import Enum, auto
+
+class OrderStatus(Enum):
+    """Статусы заказа в интернет-магазине"""
+    PENDING = auto()      # auto() автоматически генерирует значения
+    CONFIRMED = auto()
+    PROCESSING = auto()
+    SHIPPED = auto()
+    DELIVERED = auto()
+    CANCELLED = auto()
+
+class Order:
+    def __init__(self, order_id):
+        self.order_id = order_id
+        self.status = OrderStatus.PENDING
+    
+    def confirm(self):
+        if self.status == OrderStatus.PENDING:
+            self.status = OrderStatus.CONFIRMED
+            print(f"✅ Заказ {self.order_id} подтверждён")
+        else:
+            print(f"❌ Нельзя подтвердить заказ в статусе {self.status.name}")
+    
+    def ship(self):
+        if self.status == OrderStatus.PROCESSING:
+            self.status = OrderStatus.SHIPPED
+            print(f"📦 Заказ {self.order_id} отправлен")
+        else:
+            print(f"❌ Нельзя отправить заказ в статусе {self.status.name}")
+    
+    def cancel(self):
+        if self.status in (OrderStatus.PENDING, OrderStatus.CONFIRMED):
+            self.status = OrderStatus.CANCELLED
+            print(f"🚫 Заказ {self.order_id} отменён")
+        else:
+            print(f"❌ Нельзя отменить заказ в статусе {self.status.name}")
+    
+    def __repr__(self):
+        return f"Order(id={self.order_id}, status={self.status.name})"
+
+# Использование
+order = Order(12345)
+print(order)  # Order(id=12345, status=PENDING)
+
+order.confirm()
+print(order)  # Order(id=12345, status=CONFIRMED)
+
+order.cancel()
+print(order)  # Order(id=12345, status=CANCELLED)
+
+order.ship()  # ❌ Нельзя отправить заказ в статусе CANCELLED
+```
+
+### Пример 2: Уровни логирования
+
+```python
+from enum import IntEnum
+
+class LogLevel(IntEnum):
+    """Уровни логирования с числовыми значениями"""
+    DEBUG = 10
+    INFO = 20
+    WARNING = 30
+    ERROR = 40
+    CRITICAL = 50
+
+class Logger:
+    def __init__(self, min_level=LogLevel.INFO):
+        self.min_level = min_level
+    
+    def log(self, level, message):
+        if level >= self.min_level:
+            emoji = {
+                LogLevel.DEBUG: "🐛",
+                LogLevel.INFO: "ℹ️",
+                LogLevel.WARNING: "⚠️",
+                LogLevel.ERROR: "❌",
+                LogLevel.CRITICAL: "🔥"
+            }
+            print(f"{emoji[level]} [{level.name}] {message}")
+    
+    def debug(self, message):
+        self.log(LogLevel.DEBUG, message)
+    
+    def info(self, message):
+        self.log(LogLevel.INFO, message)
+    
+    def warning(self, message):
+        self.log(LogLevel.WARNING, message)
+    
+    def error(self, message):
+        self.log(LogLevel.ERROR, message)
+    
+    def critical(self, message):
+        self.log(LogLevel.CRITICAL, message)
+
+# Логгер с минимальным уровнем WARNING
+logger = Logger(min_level=LogLevel.WARNING)
+
+logger.debug("Это отладочное сообщение")      # Не выведется
+logger.info("Это информационное сообщение")   # Не выведется
+logger.warning("Это предупреждение")          # ⚠️ [WARNING] Это предупреждение
+logger.error("Это ошибка")                    # ❌ [ERROR] Это ошибка
+logger.critical("Это критическая ошибка!")    # 🔥 [CRITICAL] Это критическая ошибка!
+```
+
+### Пример 3: HTTP методы и коды ответов
+
+```python
+from enum import Enum
+
+class HTTPMethod(Enum):
+    """HTTP методы"""
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+
+class HTTPStatus(Enum):
+    """HTTP статус-коды"""
+    OK = 200
+    CREATED = 201
+    BAD_REQUEST = 400
+    UNAUTHORIZED = 401
+    FORBIDDEN = 403
+    NOT_FOUND = 404
+    INTERNAL_SERVER_ERROR = 500
+    
+    def is_success(self):
+        """Проверка на успешный код (2xx)"""
+        return 200 <= self.value < 300
+    
+    def is_client_error(self):
+        """Проверка на клиентскую ошибку (4xx)"""
+        return 400 <= self.value < 500
+    
+    def is_server_error(self):
+        """Проверка на серверную ошибку (5xx)"""
+        return 500 <= self.value < 600
+
+class Request:
+    def __init__(self, method, url):
+        self.method = method
+        self.url = url
+    
+    def __repr__(self):
+        return f"{self.method.value} {self.url}"
+
+class Response:
+    def __init__(self, status, data=None):
+        self.status = status
+        self.data = data
+    
+    def __repr__(self):
+        return f"Response({self.status.value} {self.status.name})"
+
+# Использование
+request = Request(HTTPMethod.GET, "/api/users")
+print(request)  # GET /api/users
+
+response = Response(HTTPStatus.OK, {"users": []})
+print(response)  # Response(200 OK)
+print(f"Успешный запрос: {response.status.is_success()}")  # True
+
+error_response = Response(HTTPStatus.NOT_FOUND)
+print(error_response)  # Response(404 NOT_FOUND)
+print(f"Клиентская ошибка: {error_response.status.is_client_error()}")  # True
+```
+
+### Пример 4: Enum со строками (StrEnum в Python 3.11+)
+
+```python
+from enum import Enum
+
+class Currency(str, Enum):
+    """Валюты (наследуются от str для удобного сравнения)"""
+    USD = "USD"
+    EUR = "EUR"
+    RUB = "RUB"
+    GBP = "GBP"
+    JPY = "JPY"
+    
+    @property
+    def symbol(self):
+        """Символ валюты"""
+        symbols = {
+            Currency.USD: "$",
+            Currency.EUR: "€",
+            Currency.RUB: "₽",
+            Currency.GBP: "£",
+            Currency.JPY: "¥"
+        }
+        return symbols[self]
+
+class Money:
+    def __init__(self, amount, currency):
+        self.amount = amount
+        self.currency = currency
+    
+    def __repr__(self):
+        return f"{self.amount}{self.currency.symbol}"
+    
+    def __add__(self, other):
+        if self.currency != other.currency:
+            raise ValueError(f"Нельзя складывать {self.currency.value} и {other.currency.value}")
+        return Money(self.amount + other.amount, self.currency)
+
+# Использование
+price1 = Money(100, Currency.USD)
+price2 = Money(50, Currency.USD)
+print(price1)  # 100$
+print(price2)  # 50$
+
+total = price1 + price2
+print(f"Итого: {total}")  # Итого: 150$
+
+# Попытка сложить разные валюты
+try:
+    wrong = Money(100, Currency.EUR) + Money(50, Currency.RUB)
+except ValueError as e:
+    print(f"Ошибка: {e}")  # Ошибка: Нельзя складывать EUR и RUB
+```
+
 ## `30.3` Миксины
+[Миксины в Python](https://docs-python.ru/tutorial/klassy-jazyke-python/takoe-klassy-miksiny/)
+
+**Миксин (Mixin)** — это класс, который предоставляет дополнительную функциональность другим классам через множественное наследование. Миксины не используются самостоятельно, а "подмешиваются" к основным классам.
+
+### Основные правила миксинов:
+1. Миксин не должен иметь `__init__` (или должен корректно работать с `super()`)
+2. Название обычно заканчивается на `Mixin`
+3. Миксин предоставляет одну конкретную функциональность
+
+### Пример 1: Миксины для сериализации
+
+```python
+import json
+import pickle
+
+class JSONSerializerMixin:
+    """Миксин для сериализации в JSON"""
+    
+    def to_json(self):
+        """Преобразовать объект в JSON"""
+        return json.dumps(self.__dict__, ensure_ascii=False, indent=2)
+    
+    @classmethod
+    def from_json(cls, json_string):
+        """Создать объект из JSON"""
+        data = json.loads(json_string)
+        return cls(**data)
+
+class PickleSerializerMixin:
+    """Миксин для сериализации через pickle"""
+    
+    def to_pickle(self):
+        """Преобразовать объект в bytes через pickle"""
+        return pickle.dumps(self)
+    
+    @classmethod
+    def from_pickle(cls, data):
+        """Создать объект из pickle bytes"""
+        return pickle.loads(data)
+
+class ReprMixin:
+    """Миксин для красивого __repr__"""
+    
+    def __repr__(self):
+        attrs = ', '.join(f"{k}={v!r}" for k, v in self.__dict__.items())
+        return f"{self.__class__.__name__}({attrs})"
+
+# Класс использует несколько миксинов
+class User(JSONSerializerMixin, PickleSerializerMixin, ReprMixin):
+    def __init__(self, username, email, age):
+        self.username = username
+        self.email = email
+        self.age = age
+
+# Использование
+user = User("john_doe", "john@example.com", 25)
+print(user)  # User(username='john_doe', email='john@example.com', age=25)
+
+# JSON сериализация
+json_data = user.to_json()
+print("\nJSON:")
+print(json_data)
+# {
+#   "username": "john_doe",
+#   "email": "john@example.com",
+#   "age": 25
+# }
+
+# Восстановление из JSON
+restored_user = User.from_json(json_data)
+print(f"\nВосстановлен из JSON: {restored_user}")
+
+# Pickle сериализация
+pickle_data = user.to_pickle()
+print(f"\nPickle bytes: {pickle_data[:50]}...")
+
+restored_from_pickle = User.from_pickle(pickle_data)
+print(f"Восстановлен из Pickle: {restored_from_pickle}")
+```
+
+### Пример 2: Миксины для валидации
+
+```python
+class ValidationMixin:
+    """Миксин для валидации данных"""
+    
+    def validate(self):
+        """Валидация всех полей с правилами"""
+        errors = []
+        
+        for field_name, rules in self._validation_rules.items():
+            value = getattr(self, field_name, None)
+            
+            # Проверка required
+            if rules.get('required') and not value:
+                errors.append(f"{field_name} обязателен")
+                continue
+            
+            # Проверка min_length
+            if 'min_length' in rules and len(str(value)) < rules['min_length']:
+                errors.append(f"{field_name} должен быть не короче {rules['min_length']} символов")
+            
+            # Проверка max_length
+            if 'max_length' in rules and len(str(value)) > rules['max_length']:
+                errors.append(f"{field_name} должен быть не длиннее {rules['max_length']} символов")
+            
+            # Проверка min_value
+            if 'min_value' in rules and value < rules['min_value']:
+                errors.append(f"{field_name} должен быть не меньше {rules['min_value']}")
+            
+            # Проверка max_value
+            if 'max_value' in rules and value > rules['max_value']:
+                errors.append(f"{field_name} должен быть не больше {rules['max_value']}")
+        
+        return errors
+    
+    def is_valid(self):
+        """Проверка валидности"""
+        return len(self.validate()) == 0
+
+class TimestampMixin:
+    """Миксин для автоматических временных меток"""
+    
+    def __init__(self, *args, **kwargs):
+        from datetime import datetime
+        super().__init__(*args, **kwargs)
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
+    
+    def touch(self):
+        """Обновить временную метку"""
+        from datetime import datetime
+        self.updated_at = datetime.now()
+
+class Product(ValidationMixin, TimestampMixin):
+    """Продукт с валидацией и временными метками"""
+    
+    _validation_rules = {
+        'name': {'required': True, 'min_length': 3, 'max_length': 100},
+        'price': {'required': True, 'min_value': 0, 'max_value': 1_000_000},
+        'quantity': {'required': True, 'min_value': 0}
+    }
+    
+    def __init__(self, name, price, quantity):
+        self.name = name
+        self.price = price
+        self.quantity = quantity
+        super().__init__()  # Вызываем __init__ миксинов
+    
+    def __repr__(self):
+        return f"Product(name='{self.name}', price={self.price}, quantity={self.quantity})"
+
+# Использование
+# Валидный продукт
+product = Product("Ноутбук", 50000, 10)
+print(product)
+print(f"Валиден: {product.is_valid()}")  # True
+print(f"Создан: {product.created_at}")
+
+# Невалидный продукт
+invalid_product = Product("AB", -100, 5)
+print(f"\nВалиден: {invalid_product.is_valid()}")  # False
+print("Ошибки валидации:")
+for error in invalid_product.validate():
+    print(f"  - {error}")
+# Ошибки валидации:
+#   - name должен быть не короче 3 символов
+#   - price должен быть не меньше 0
+
+# Обновление временной метки
+import time
+time.sleep(0.1)
+product.touch()
+print(f"\nОбновлён: {product.updated_at}")
+print(f"Разница: {(product.updated_at - product.created_at).total_seconds():.2f} сек")
+```
+
+### Пример 3: Миксин для сравнения
+
+```python
+class ComparableMixin:
+    """Миксин для автоматической реализации операторов сравнения"""
+    
+    def _comparable_value(self):
+        """Метод должен быть переопределён в дочернем классе"""
+        raise NotImplementedError
+    
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self._comparable_value() == other._comparable_value()
+    
+    def __lt__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self._comparable_value() < other._comparable_value()
+    
+    def __le__(self, other):
+        return self == other or self < other
+    
+    def __gt__(self, other):
+        return not self <= other
+    
+    def __ge__(self, other):
+        return not self < other
+    
+    def __ne__(self, other):
+        return not self == other
+
+class Student(ComparableMixin):
+    """Студент сравнивается по среднему баллу"""
+    
+    def __init__(self, name, grades):
+        self.name = name
+        self.grades = grades
+    
+    def _comparable_value(self):
+        return sum(self.grades) / len(self.grades) if self.grades else 0
+    
+    def average(self):
+        return self._comparable_value()
+    
+    def __repr__(self):
+        return f"Student('{self.name}', avg={self.average():.2f})"
+
+# Использование
+student1 = Student("Иван", [5, 4, 5, 5, 4])
+student2 = Student("Мария", [5, 5, 5, 4, 5])
+student3 = Student("Пётр", [3, 4, 3, 4, 3])
+
+print(student1)  # Student('Иван', avg=4.60)
+print(student2)  # Student('Мария', avg=4.80)
+print(student3)  # Student('Пётр', avg=3.40)
+
+print(f"\n{student2.name} лучше {student1.name}: {student2 > student1}")  # True
+print(f"{student3.name} хуже {student1.name}: {student3 < student1}")    # True
+print(f"{student1.name} == {student2.name}: {student1 == student2}")     # False
+
+# Сортировка студентов
+students = [student3, student1, student2]
+sorted_students = sorted(students)
+print("\nСтуденты по среднему баллу:")
+for student in sorted_students:
+    print(f"  {student}")
+# Student('Пётр', avg=3.40)
+# Student('Иван', avg=4.60)
+# Student('Мария', avg=4.80)
+```
+
 ## `30.4` dataclasses
+[dataclasses в Python (видео)](https://www.youtube.com/watch?v=aH5sgOxuCnk)
+[dataclasses в Python (статья)](https://habr.com/ru/companies/otus/articles/650257/)
+
+**dataclasses** (появились в Python 3.7) — это декоратор, который автоматически генерирует специальные методы (`__init__`, `__repr__`, `__eq__` и другие) для классов, которые в основном хранят данные.
+
+### Базовое использование
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+# Автоматически создаётся __init__
+point = Point(10, 20)
+
+# Автоматически создаётся __repr__
+print(point)  # Point(x=10, y=20)
+
+# Автоматически создаётся __eq__
+point2 = Point(10, 20)
+print(point == point2)  # True
+```
+
+### Пример 1: Dataclass с значениями по умолчанию
+
+```python
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class Book:
+    title: str
+    author: str
+    year: int
+    pages: int
+    isbn: str = ""  # Значение по умолчанию
+    tags: List[str] = field(default_factory=list)  # Для изменяемых типов
+    
+    def __post_init__(self):
+        """Вызывается после __init__ для дополнительной логики"""
+        if self.year < 0:
+            raise ValueError("Год не может быть отрицательным")
+    
+    @property
+    def age(self):
+        """Сколько лет книге"""
+        from datetime import datetime
+        return datetime.now().year - self.year
+
+# Использование
+book = Book(
+    title="Война и мир",
+    author="Лев Толстой",
+    year=1869,
+    pages=1225,
+    tags=["классика", "роман", "исторический"]
+)
+
+print(book)
+# Book(title='Война и мир', author='Лев Толстой', year=1869, pages=1225, isbn='', tags=['классика', 'роман', 'исторический'])
+
+print(f"Возраст книги: {book.age} лет")  # Возраст книги: 156 лет
+
+# Создание без опциональных полей
+book2 = Book("1984", "Джордж Оруэлл", 1949, 328)
+print(book2)
+# Book(title='1984', author='Джордж Оруэлл', year=1949, pages=328, isbn='', tags=[])
+```
+
+### Пример 2: Замороженные dataclasses (неизменяемые)
+
+```python
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Coordinate:
+    """Неизменяемая координата"""
+    latitude: float
+    longitude: float
+    
+    def distance_to(self, other):
+        """Упрощённое вычисление расстояния"""
+        return ((self.latitude - other.latitude) ** 2 + 
+                (self.longitude - other.longitude) ** 2) ** 0.5
+
+# Использование
+moscow = Coordinate(55.7558, 37.6173)
+spb = Coordinate(59.9311, 30.3609)
+
+print(moscow)  # Coordinate(latitude=55.7558, longitude=37.6173)
+print(f"Расстояние: {moscow.distance_to(spb):.2f}")  # Упрощённое
+
+# Попытка изменить вызовет ошибку
+try:
+    moscow.latitude = 60.0
+except Exception as e:
+    print(f"Ошибка: {e}")  # Ошибка: cannot assign to field 'latitude'
+
+# frozen dataclasses можно использовать как ключи в словаре
+locations = {
+    moscow: "Москва",
+    spb: "Санкт-Петербург"
+}
+print(locations[moscow])  # Москва
+```
+
+### Пример 3: Dataclass с вычисляемыми полями
+
+```python
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional
+
+@dataclass
+class Task:
+    """Задача в трекере"""
+    title: str
+    description: str = ""
+    priority: int = 1  # 1-5
+    created_at: datetime = field(default_factory=datetime.now)
+    completed_at: Optional[datetime] = None
+    
+    @property
+    def is_completed(self) -> bool:
+        return self.completed_at is not None
+    
+    @property
+    def duration(self) -> Optional[float]:
+        """Время выполнения в часах"""
+        if self.completed_at:
+            delta = self.completed_at - self.created_at
+            return delta.total_seconds() / 3600
+        return None
+    
+    def complete(self):
+        """Отметить задачу как выполненную"""
+        if not self.is_completed:
+            self.completed_at = datetime.now()
+            print(f"✅ Задача '{self.title}' выполнена!")
+        else:
+            print(f"⚠️ Задача '{self.title}' уже выполнена")
+    
+    def __str__(self):
+        status = "✅" if self.is_completed else "⏳"
+        return f"{status} [{self.priority}] {self.title}"
+
+# Использование
+task1 = Task("Написать код", priority=3)
+task2 = Task("Написать тесты", "Покрыть тестами модуль user", priority=4)
+task3 = Task("Развернуть на сервере", priority=5)
+
+print(task1)  # ⏳ [3] Написать код
+print(task2)  # ⏳ [4] Написать тесты
+print(task3)  # ⏳ [5] Развернуть на сервере
+
+# Выполняем задачу
+import time
+time.sleep(0.01)  # Имитация выполнения
+task1.complete()  # ✅ Задача 'Написать код' выполнена!
+
+print(f"\n{task1}")  # ✅ [3] Написать код
+print(f"Время выполнения: {task1.duration:.4f} часов")
+
+# Сортировка задач по приоритету
+tasks = [task1, task2, task3]
+sorted_tasks = sorted(tasks, key=lambda t: t.priority, reverse=True)
+print("\nЗадачи по приоритету:")
+for task in sorted_tasks:
+    print(f"  {task}")
+# ⏳ [5] Развернуть на сервере
+# ⏳ [4] Написать тесты
+# ✅ [3] Написать код
+```
+
+### Пример 4: Сложные dataclasses с вложенными структурами
+
+```python
+from dataclasses import dataclass, field
+from typing import List
+from enum import Enum
+
+class Department(Enum):
+    """Отделы компании"""
+    IT = "IT"
+    HR = "HR"
+    SALES = "Sales"
+    MARKETING = "Marketing"
+
+@dataclass
+class Address:
+    """Адрес"""
+    street: str
+    city: str
+    country: str
+    postal_code: str
+    
+    def __str__(self):
+        return f"{self.street}, {self.city}, {self.postal_code}, {self.country}"
+
+@dataclass
+class Employee:
+    """Сотрудник"""
+    first_name: str
+    last_name: str
+    department: Department
+    salary: float
+    email: str
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    def __str__(self):
+        return f"{self.full_name} ({self.department.value})"
+
+@dataclass
+class Company:
+    """Компания"""
+    name: str
+    address: Address
+    employees: List[Employee] = field(default_factory=list)
+    
+    def hire(self, employee: Employee):
+        """Нанять сотрудника"""
+        self.employees.append(employee)
+        print(f"✅ {employee.full_name} принят в отдел {employee.department.value}")
+    
+    def fire(self, employee: Employee):
+        """Уволить сотрудника"""
+        if employee in self.employees:
+            self.employees.remove(employee)
+            print(f"❌ {employee.full_name} уволен")
+    
+    def get_by_department(self, department: Department) -> List[Employee]:
+        """Получить сотрудников отдела"""
+        return [emp for emp in self.employees if emp.department == department]
+    
+    def total_salary(self) -> float:
+        """Общий фонд заработной платы"""
+        return sum(emp.salary for emp in self.employees)
+    
+    def __str__(self):
+        return f"{self.name} ({len(self.employees)} сотрудников)"
+
+# Использование
+address = Address(
+    street="ул. Ленина, 10",
+    city="Москва",
+    country="Россия",
+    postal_code="101000"
+)
+
+company = Company("TechCorp", address)
+print(f"{company.name}\nАдрес: {company.address}\n")
+
+# Нанимаем сотрудников
+emp1 = Employee("Иван", "Петров", Department.IT, 100000, "ivan@techcorp.com")
+emp2 = Employee("Мария", "Сидорова", Department.IT, 120000, "maria@techcorp.com")
+emp3 = Employee("Пётр", "Иванов", Department.SALES, 80000, "petr@techcorp.com")
+emp4 = Employee("Анна", "Смирнова", Department.HR, 90000, "anna@techcorp.com")
+
+for emp in [emp1, emp2, emp3, emp4]:
+    company.hire(emp)
+
+print(f"\n{company}")
+print(f"Общий фонд ЗП: {company.total_salary():,.0f} ₽")
+
+# Сотрудники IT отдела
+print("\nIT отдел:")
+for emp in company.get_by_department(Department.IT):
+    print(f"  - {emp.full_name}: {emp.salary:,.0f} ₽")
+```
+
+### Пример 5: Dataclass с дополнительными параметрами
+
+```python
+from dataclasses import dataclass, field, asdict, astuple
+
+@dataclass(order=True)  # Добавляет операторы сравнения
+class Score:
+    """Результат игрока (сравнивается по очкам)"""
+    points: int = field(compare=True)  # Используется для сравнения
+    player_name: str = field(compare=False)  # НЕ используется для сравнения
+    level: int = field(default=1, compare=False)
+    
+    def __str__(self):
+        return f"{self.player_name}: {self.points} очков (уровень {self.level})"
+
+# Создание результатов
+score1 = Score(1500, "Игрок1", 5)
+score2 = Score(2000, "Игрок2", 7)
+score3 = Score(1200, "Игрок3", 3)
+
+# Сравнение работает автоматически благодаря order=True
+print(score2 > score1)  # True
+print(score3 < score1)  # True
+
+# Сортировка
+scores = [score1, score2, score3]
+sorted_scores = sorted(scores, reverse=True)  # От большего к меньшему
+
+print("\nТаблица лидеров:")
+for i, score in enumerate(sorted_scores, 1):
+    print(f"{i}. {score}")
+# 1. Игрок2: 2000 очков (уровень 7)
+# 2. Игрок1: 1500 очков (уровень 5)
+# 3. Игрок3: 1200 очков (уровень 3)
+
+# Преобразование в словарь
+score_dict = asdict(score1)
+print(f"\nКак словарь: {score_dict}")
+# {'points': 1500, 'player_name': 'Игрок1', 'level': 5}
+
+# Преобразование в кортеж
+score_tuple = astuple(score1)
+print(f"Как кортеж: {score_tuple}")
+# (1500, 'Игрок1', 5)
+```
+
+### Пример 6: Dataclass для API ответов
+
+```python
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+import json
+
+@dataclass
+class User:
+    """Пользователь из API"""
+    id: int
+    username: str
+    email: str
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Создать объект из словаря (например, из JSON API)"""
+        # Преобразуем строку даты в datetime если есть
+        if 'created_at' in data and isinstance(data['created_at'], str):
+            data['created_at'] = datetime.fromisoformat(data['created_at'])
+        return cls(**data)
+    
+    def to_dict(self):
+        """Преобразовать в словарь для JSON"""
+        result = {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'is_active': self.is_active,
+            'metadata': self.metadata
+        }
+        if self.created_at:
+            result['created_at'] = self.created_at.isoformat()
+        return result
+
+@dataclass
+class APIResponse:
+    """Ответ API"""
+    success: bool
+    data: Optional[Any] = None
+    error: Optional[str] = None
+    timestamp: datetime = field(default_factory=datetime.now)
+    
+    def to_json(self):
+        """Преобразовать в JSON"""
+        result = {
+            'success': self.success,
+            'timestamp': self.timestamp.isoformat()
+        }
+        if self.data is not None:
+            # Если data это dataclass, преобразуем в dict
+            if hasattr(self.data, 'to_dict'):
+                result['data'] = self.data.to_dict()
+            elif isinstance(self.data, list) and self.data and hasattr(self.data[0], 'to_dict'):
+                result['data'] = [item.to_dict() for item in self.data]
+            else:
+                result['data'] = self.data
+        if self.error:
+            result['error'] = self.error
+        return json.dumps(result, indent=2, ensure_ascii=False)
+
+# Симуляция API
+
+def get_user(user_id: int) -> APIResponse:
+    """Получить пользователя по ID"""
+    if user_id == 1:
+        user = User(
+            id=1,
+            username="john_doe",
+            email="john@example.com",
+            created_at=datetime(2024, 1, 15),
+            metadata={"country": "Russia", "premium": True}
+        )
+        return APIResponse(success=True, data=user)
+    else:
+        return APIResponse(success=False, error="Пользователь не найден")
+
+def get_users() -> APIResponse:
+    """Получить список пользователей"""
+    users = [
+        User(1, "john_doe", "john@example.com", metadata={"premium": True}),
+        User(2, "jane_smith", "jane@example.com"),
+        User(3, "bob_wilson", "bob@example.com", is_active=False)
+    ]
+    return APIResponse(success=True, data=users)
+
+# Использование
+print("=== Получение одного пользователя ===")
+response1 = get_user(1)
+print(response1.to_json())
+
+print("\n=== Пользователь не найден ===")
+response2 = get_user(999)
+print(response2.to_json())
+
+print("\n=== Список пользователей ===")
+response3 = get_users()
+print(response3.to_json())
+
+# Работа с данными
+if response1.success:
+    user = response1.data
+    print(f"\nПолучен пользователь: {user.username} ({user.email})")
+    print(f"Метаданные: {user.metadata}")
+```
+
+### Пример 7: Dataclass с валидацией
+
+```python
+from dataclasses import dataclass
+import re
+
+@dataclass
+class UserRegistration:
+    """Регистрация пользователя с валидацией"""
+    username: str
+    email: str
+    password: str
+    age: int
+    
+    def __post_init__(self):
+        """Валидация после создания объекта"""
+        errors = []
+        
+        # Валидация username
+        if len(self.username) < 3:
+            errors.append("Username должен быть не менее 3 символов")
+        if not self.username.isalnum():
+            errors.append("Username должен содержать только буквы и цифры")
+        
+        # Валидация email
+        email_pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        if not re.match(email_pattern, self.email):
+            errors.append("Некорректный формат email")
+        
+        # Валидация password
+        if len(self.password) < 8:
+            errors.append("Пароль должен быть не менее 8 символов")
+        if not any(c.isupper() for c in self.password):
+            errors.append("Пароль должен содержать хотя бы одну заглавную букву")
+        if not any(c.isdigit() for c in self.password):
+            errors.append("Пароль должен содержать хотя бы одну цифру")
+        
+        # Валидация возраста
+        if self.age < 18:
+            errors.append("Возраст должен быть не менее 18 лет")
+        if self.age > 120:
+            errors.append("Некорректный возраст")
+        
+        if errors:
+            raise ValueError("Ошибки валидации:\n  - " + "\n  - ".join(errors))
+
+# Правильная регистрация
+try:
+    user1 = UserRegistration("john123", "john@example.com", "SecurePass123", 25)
+    print(f"✅ Пользователь {user1.username} зарегистрирован")
+except ValueError as e:
+    print(f"❌ {e}")
+
+# Неправильная регистрация
+try:
+    user2 = UserRegistration("ab", "invalid-email", "weak", 15)
+    print(f"✅ Пользователь {user2.username} зарегистрирован")
+except ValueError as e:
+    print(f"❌ {e}")
+# ❌ Ошибки валидации:
+#   - Username должен быть не менее 3 символов
+#   - Некорректный формат email
+#   - Пароль должен быть не менее 8 символов
+#   - Пароль должен содержать хотя бы одну заглавную букву
+#   - Пароль должен содержать хотя бы одну цифру
+#   - Возраст должен быть не менее 18 лет
+```
+
+### Сравнение: обычный класс vs dataclass
+
+```python
+# ❌ Обычный класс — много шаблонного кода
+class PersonRegular:
+    def __init__(self, name, age, city):
+        self.name = name
+        self.age = age
+        self.city = city
+    
+    def __repr__(self):
+        return f"PersonRegular(name='{self.name}', age={self.age}, city='{self.city}')"
+    
+    def __eq__(self, other):
+        if not isinstance(other, PersonRegular):
+            return NotImplemented
+        return (self.name == other.name and 
+                self.age == other.age and 
+                self.city == other.city)
+
+# ✅ Dataclass — лаконично и понятно
+from dataclasses import dataclass
+
+@dataclass
+class PersonDataclass:
+    name: str
+    age: int
+    city: str
+
+# Оба работают одинаково
+p1 = PersonRegular("Иван", 25, "Москва")
+p2 = PersonDataclass("Мария", 30, "Санкт-Петербург")
+
+print(p1)  # PersonRegular(name='Иван', age=25, city='Москва')
+print(p2)  # PersonDataclass(name='Мария', age=30, city='Санкт-Петербург')
+
+# Но dataclass требует гораздо меньше кода!
+```
+
+## Резюме
+
+### `__slots__` и `__dict__`:
+- **`__dict__`** — динамический словарь атрибутов (по умолчанию)
+- **`__slots__`** — фиксированный набор атрибутов для экономии памяти
+- Используй `__slots__` для классов, где создаются тысячи экземпляров
+
+### Enum:
+- **Перечисления** для именованных констант
+- Заменяют "магические числа" и строки
+- Делают код безопаснее и читабельнее
+- Используй `auto()` для автогенерации значений
+
+### Миксины:
+- **Классы для добавления функциональности** через множественное наследование
+- Один миксин = одна конкретная возможность
+- Название обычно с суффиксом `Mixin`
+- Не используются самостоятельно
+
+### Dataclasses:
+- **Автогенерация** `__init__`, `__repr__`, `__eq__` и других методов
+- Идеальны для классов, хранящих данные
+- Поддержка значений по умолчанию, frozen (неизменяемые), сортировки
+- Используй для DTO (Data Transfer Objects), конфигураций, API моделей
+
+**Когда что использовать:**
+- **Много объектов** → `__slots__`
+- **Константы** → `Enum`
+- **Переиспользуемая функциональность** → Миксины
+- **Классы с данными** → Dataclasses
 
 ----
 
 # `31` (`*`) Виртуальное окружение
 ## `31.1` Что такое виртуальное окружение и зачем?
+[Виртуальное окружение](https://www.youtube.com/watch?v=rsG1Y5k-9jo)
+
+Представь, что ты работаешь над двумя проектами на Python. Один проект требует библиотеку `requests` версии 2.25.0, а другой — версии 2.31.0. Если установить обе версии глобально (на весь компьютер), возникнет конфликт — Python не может одновременно использовать две разные версии одной библиотеки.
+
+**Виртуальное окружение** — это изолированная папка на твоём компьютере, где хранятся отдельная копия Python и все библиотеки для конкретного проекта. Это как отдельная "песочница" для каждого проекта.
+
+### Зачем нужны виртуальные окружения?
+
+1. **Изоляция зависимостей** — каждый проект имеет свои версии библиотек
+2. **Чистота системы** — не засоряешь глобальный Python сотнями библиотек
+3. **Воспроизводимость** — коллеги могут легко установить те же версии библиотек
+4. **Безопасность** — экспериментируешь без риска сломать другие проекты
+
 ## `31.1` venv
+`venv` — это встроенный модуль Python для создания виртуальных окружений. Он входит в стандартную библиотеку, поэтому ничего дополнительно устанавливать не нужно.
+
+### Пример 1: Создание и активация виртуального окружения
+
+```bash
+# Создаём виртуальное окружение в папке venv
+python -m venv venv
+
+# Активация на Windows
+venv\Scripts\activate
+
+# Активация на macOS/Linux
+source venv/bin/activate
+
+# После активации в терминале появится (venv) перед строкой ввода
+# (venv) C:\Users\User\myproject>
+```
+
+После активации все команды `pip install` будут устанавливать библиотеки только в это окружение.
+
+### Пример 2: Работа с зависимостями
+
+```bash
+# Активируем окружение
+source venv/bin/activate  # или venv\Scripts\activate на Windows
+
+# Устанавливаем библиотеки
+pip install requests flask
+
+# Сохраняем список всех установленных библиотек
+pip freeze > requirements.txt
+
+# Деактивация окружения (выход из "песочницы")
+deactivate
+```
+
+Файл `requirements.txt` будет выглядеть примерно так:
+```
+requests==2.31.0
+flask==3.0.0
+click==8.1.7
+...
+```
+
+### Пример 3: Установка окружения на другом компьютере
+
+```bash
+# Твой коллега клонировал проект и хочет установить все зависимости
+
+# Создаёт своё виртуальное окружение
+python -m venv venv
+
+# Активирует его
+source venv/bin/activate
+
+# Устанавливает все библиотеки из файла requirements.txt
+pip install -r requirements.txt
+```
+
+Теперь у коллеги точно такие же версии библиотек, как у тебя!
+
 ## `31.1` poetry
+[Видео по poetry](https://youtu.be/KOC0Gbo_0HY?si=Bnx6w1b-yf_ggU6L)
+
+`poetry` — это более современный и мощный инструмент для управления зависимостями и виртуальными окружениями. Он автоматически создаёт окружения, разрешает конфликты версий и упрощает публикацию пакетов.
+
+### Установка poetry
+
+```bash
+# На Windows (PowerShell)
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+
+# На macOS/Linux
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+### Пример 1: Создание нового проекта
+
+```bash
+# Создаём новый проект с готовой структурой
+poetry new my_project
+
+cd my_project
+
+# Poetry автоматически создаст файл pyproject.toml
+```
+
+Файл `pyproject.toml` содержит всю информацию о проекте:
+```toml
+[tool.poetry]
+name = "my-project"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+```
+
+### Пример 2: Установка зависимостей
+
+```bash
+# Добавляем библиотеку (Poetry автоматически найдёт совместимую версию)
+poetry add requests
+
+# Добавляем библиотеку только для разработки (например, для тестов)
+poetry add --group dev pytest
+
+# Устанавливаем все зависимости из pyproject.toml
+poetry install
+```
+
+Poetry автоматически обновит `pyproject.toml` и создаст файл `poetry.lock`, который фиксирует точные версии всех библиотек.
+
+### Пример 3: Запуск кода в виртуальном окружении
+
+```bash
+# Запуск Python-скрипта через Poetry
+poetry run python main.py
+
+# Запуск команды в виртуальном окружении
+poetry run pytest
+
+# Активация виртуального окружения в текущем терминале
+poetry shell
+
+# Теперь можешь запускать команды без poetry run:
+python main.py
+pytest
+```
+
+### Сравнение venv и poetry
+
+| Критерий | venv | poetry |
+|----------|------|--------|
+| **Установка** | Встроен в Python | Требует установки |
+| **Простота** | Проще для новичков | Больше возможностей |
+| **Управление зависимостями** | Вручную через pip | Автоматически |
+| **Файлы конфигурации** | requirements.txt | pyproject.toml + poetry.lock |
+| **Разрешение конфликтов** | Нет | Да |
+
+**Когда использовать venv:** для простых проектов, обучения, быстрых экспериментов.
+
+**Когда использовать poetry:** для серьёзных проектов, работы в команде, публикации библиотек.
+
+### Резюме
+
+- **Виртуальное окружение** — изолированная среда для каждого проекта
+- **venv** — простой встроенный инструмент для создания окружений
+- **poetry** — продвинутый менеджер зависимостей с автоматическим управлением версиями
+- Всегда используй виртуальные окружения, чтобы избежать конфликтов библиотек!
 
 ----
 
@@ -28857,10 +32325,1187 @@ consumer_thread.join()
 
 
 ## `32.10` Deadlock (взаимная блокировка) — что это и как предотвратить
+**Deadlock (взаимная блокировка)** — это ситуация, когда два или более потока бесконечно ждут друг друга, и ни один не может продолжить выполнение. Это одна из самых опасных проблем в многопоточном программировании.
+
+### Как возникает Deadlock?
+
+Представь две комнаты с двумя дверьми. Для входа в комнату нужны оба ключа:
+- Поток 1: взял ключ А, ждёт ключ Б
+- Поток 2: взял ключ Б, ждёт ключ А
+- Результат: оба потока застряли навечно 🔒
+
+### Пример 1: Классический Deadlock
+
+```python
+import threading
+import time
+
+lock_a = threading.Lock()
+lock_b = threading.Lock()
+
+def task_1():
+    """Поток 1: берёт lock_a, потом lock_b"""
+    print("🔵 Поток 1: пытается взять lock_a")
+    with lock_a:
+        print("🔵 Поток 1: взял lock_a")
+        time.sleep(0.1)  # Имитация работы
+        
+        print("🔵 Поток 1: пытается взять lock_b")
+        with lock_b:
+            print("🔵 Поток 1: взял lock_b")
+            print("🔵 Поток 1: завершил работу")
+
+def task_2():
+    """Поток 2: берёт lock_b, потом lock_a"""
+    print("🔴 Поток 2: пытается взять lock_b")
+    with lock_b:
+        print("🔴 Поток 2: взял lock_b")
+        time.sleep(0.1)  # Имитация работы
+        
+        print("🔴 Поток 2: пытается взять lock_a")
+        with lock_a:
+            print("🔴 Поток 2: взял lock_a")
+            print("🔴 Поток 2: завершил работу")
+
+# Запуск потоков - DEADLOCK!
+thread1 = threading.Thread(target=task_1)
+thread2 = threading.Thread(target=task_2)
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+# Вывод:
+# 🔵 Поток 1: пытается взять lock_a
+# 🔵 Поток 1: взял lock_a
+# 🔴 Поток 2: пытается взять lock_b
+# 🔴 Поток 2: взял lock_b
+# 🔵 Поток 1: пытается взять lock_b  ← застрял
+# 🔴 Поток 2: пытается взять lock_a  ← застрял
+# [Программа зависает навсегда]
+```
+
+### Способ 1: Упорядочивание блокировок
+
+**Правило:** Всегда берите блокировки в одном и том же порядке во всех потоках.
+
+```python
+import threading
+import time
+
+lock_a = threading.Lock()
+lock_b = threading.Lock()
+
+def task_1():
+    """Поток 1: берёт блокировки в порядке A -> B"""
+    print("🔵 Поток 1: начал работу")
+    with lock_a:
+        print("🔵 Поток 1: взял lock_a")
+        time.sleep(0.1)
+        with lock_b:
+            print("🔵 Поток 1: взял lock_b")
+            print("🔵 Поток 1: завершил работу")
+
+def task_2():
+    """Поток 2: ТОЖЕ берёт блокировки в порядке A -> B (не B -> A!)"""
+    print("🔴 Поток 2: начал работу")
+    with lock_a:  # ← Изменили порядок!
+        print("🔴 Поток 2: взял lock_a")
+        time.sleep(0.1)
+        with lock_b:
+            print("🔴 Поток 2: взял lock_b")
+            print("🔴 Поток 2: завершил работу")
+
+# Запуск потоков - НЕТ DEADLOCK!
+thread1 = threading.Thread(target=task_1)
+thread2 = threading.Thread(target=task_2)
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+print("✅ Все потоки завершились успешно!")
+```
+
+### Способ 2: Использование timeout при блокировке
+
+```python
+import threading
+import time
+
+lock_a = threading.Lock()
+lock_b = threading.Lock()
+
+def task_with_timeout(name, first_lock, second_lock):
+    """Поток с таймаутом - если не может взять блокировку, отпускает первую"""
+    max_attempts = 5
+    
+    for attempt in range(max_attempts):
+        print(f"{name}: попытка #{attempt + 1}")
+        
+        # Берём первую блокировку
+        if first_lock.acquire(timeout=0.5):
+            print(f"{name}: взял первую блокировку")
+            
+            # Пытаемся взять вторую блокировку с таймаутом
+            if second_lock.acquire(timeout=0.5):
+                try:
+                    print(f"{name}: взял вторую блокировку")
+                    print(f"{name}: ✅ выполнил работу!")
+                    return  # Успешно завершили
+                finally:
+                    second_lock.release()
+            else:
+                print(f"{name}: ⚠️ не смог взять вторую блокировку, освобождаю первую")
+            
+            first_lock.release()
+            time.sleep(0.1)  # Небольшая пауза перед повтором
+        else:
+            print(f"{name}: ⚠️ не смог взять первую блокировку")
+            time.sleep(0.1)
+    
+    print(f"{name}: ❌ превышено количество попыток")
+
+# Запуск потоков
+thread1 = threading.Thread(target=task_with_timeout, args=("Поток 1", lock_a, lock_b))
+thread2 = threading.Thread(target=task_with_timeout, args=("Поток 2", lock_b, lock_a))
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+```
+
+### Способ 3: Использование RLock (рекурсивная блокировка)
+
+```python
+import threading
+import time
+
+# RLock позволяет одному потоку захватывать блокировку несколько раз
+lock = threading.RLock()
+
+class BankAccount:
+    """Банковский счёт с защитой от deadlock"""
+    
+    def __init__(self, name, balance):
+        self.name = name
+        self.balance = balance
+        self.lock = threading.RLock()  # Рекурсивная блокировка
+    
+    def withdraw(self, amount):
+        """Снять деньги"""
+        with self.lock:
+            if self.balance >= amount:
+                print(f"💰 {self.name}: снимаем {amount}₽")
+                time.sleep(0.1)
+                self.balance -= amount
+                print(f"💳 {self.name}: остаток {self.balance}₽")
+                return True
+            return False
+    
+    def deposit(self, amount):
+        """Положить деньги"""
+        with self.lock:
+            print(f"💵 {self.name}: кладём {amount}₽")
+            self.balance += amount
+            print(f"💳 {self.name}: остаток {self.balance}₽")
+    
+    def transfer(self, to_account, amount):
+        """Перевод между счетами"""
+        # Можем безопасно вызывать методы, которые тоже используют lock
+        with self.lock:
+            print(f"🔄 Перевод {amount}₽ с {self.name} на {to_account.name}")
+            if self.withdraw(amount):  # Уже использует self.lock, но RLock позволяет
+                to_account.deposit(amount)  # И здесь тоже lock, но другого объекта
+                print(f"✅ Перевод завершён")
+            else:
+                print(f"❌ Недостаточно средств")
+
+# Использование
+account1 = BankAccount("Счёт Ивана", 1000)
+account2 = BankAccount("Счёт Марии", 500)
+
+def do_transfers():
+    account1.transfer(account2, 200)
+    time.sleep(0.1)
+    account2.transfer(account1, 100)
+
+thread1 = threading.Thread(target=do_transfers)
+thread2 = threading.Thread(target=do_transfers)
+
+thread1.start()
+thread2.start()
+
+thread1.join()
+thread2.join()
+
+print(f"\n💰 Итоговый баланс:")
+print(f"  {account1.name}: {account1.balance}₽")
+print(f"  {account2.name}: {account2.balance}₽")
+```
+
+### Пример 4: Визуализация Deadlock
+
+```python
+import threading
+import time
+from datetime import datetime
+
+class Resource:
+    """Ресурс с логированием блокировок"""
+    
+    def __init__(self, name):
+        self.name = name
+        self.lock = threading.Lock()
+        self.holder = None
+    
+    def acquire(self, thread_name):
+        """Взять ресурс"""
+        print(f"[{self._timestamp()}] {thread_name} ожидает {self.name}")
+        self.lock.acquire()
+        self.holder = thread_name
+        print(f"[{self._timestamp()}] {thread_name} 🔒 захватил {self.name}")
+    
+    def release(self, thread_name):
+        """Освободить ресурс"""
+        self.holder = None
+        self.lock.release()
+        print(f"[{self._timestamp()}] {thread_name} 🔓 освободил {self.name}")
+    
+    @staticmethod
+    def _timestamp():
+        return datetime.now().strftime("%H:%M:%S.%f")[:-3]
+
+# Создаём ресурсы
+resource_a = Resource("Ресурс A")
+resource_b = Resource("Ресурс B")
+
+def philosopher_1():
+    """Философ 1: A -> B"""
+    name = "Философ 1"
+    resource_a.acquire(name)
+    time.sleep(0.5)  # Думает...
+    resource_b.acquire(name)  # ← Застрянет здесь
+    
+    # Работа с ресурсами
+    print(f"{name}: использует оба ресурса")
+    
+    resource_b.release(name)
+    resource_a.release(name)
+
+def philosopher_2():
+    """Философ 2: B -> A"""
+    name = "Философ 2"
+    resource_b.acquire(name)
+    time.sleep(0.5)  # Думает...
+    resource_a.acquire(name)  # ← Застрянет здесь
+    
+    # Работа с ресурсами
+    print(f"{name}: использует оба ресурса")
+    
+    resource_a.release(name)
+    resource_b.release(name)
+
+print("=== Запуск потоков (будет Deadlock) ===\n")
+
+t1 = threading.Thread(target=philosopher_1)
+t2 = threading.Thread(target=philosopher_2)
+
+t1.start()
+t2.start()
+
+# Ждём 3 секунды и проверяем статус
+time.sleep(3)
+print("\n⚠️ Прошло 3 секунды - потоки всё ещё работают (Deadlock!)")
+print("Остановите программу вручную (Ctrl+C)")
+
+# Не вызываем join(), т.к. потоки никогда не завершатся
+```
+
+### Правила предотвращения Deadlock
+
+1. **Упорядочивание блокировок** — всегда захватывайте в одном порядке
+2. **Таймауты** — используйте `lock.acquire(timeout=...)` 
+3. **Минимизация блокировок** — держите критические секции короткими
+4. **Избегайте вложенных блокировок** — по возможности используйте одну блокировку
+5. **Используйте высокоуровневые примитивы** — Queue, Condition, Semaphore вместо Lock
+
 ## `32.11` Модуль queue для безопасного обмена данными между потоками:
-`Queue` — FIFO очередь
-`LifoQueue` — LIFO очередь (стек)
-`PriorityQueue` — очередь с приоритетами
+Модуль **`queue`** предоставляет потокобезопасные очереди для обмена данными между потоками. Это один из самых безопасных и рекомендуемых способов работы с многопоточностью.
+
+### Queue — FIFO очередь
+
+**FIFO (First In, First Out)** — первым вошёл, первым вышел. Как очередь в магазине.
+
+```python
+from queue import Queue
+import threading
+import time
+import random
+
+# Создаём очередь
+task_queue = Queue()
+
+def producer(name, count):
+    """Производитель: добавляет задачи в очередь"""
+    for i in range(count):
+        task = f"Задача-{i+1} от {name}"
+        print(f"➕ {name} добавил: {task}")
+        task_queue.put(task)  # Потокобезопасно!
+        time.sleep(random.uniform(0.1, 0.3))
+    print(f"✅ {name} завершил работу")
+
+def consumer(name):
+    """Потребитель: берёт задачи из очереди и обрабатывает"""
+    while True:
+        # Берём задачу из очереди (блокируется, если очередь пуста)
+        task = task_queue.get(timeout=2)  # Ждём максимум 2 секунды
+        
+        if task is None:  # Сигнал завершения
+            print(f"🛑 {name} получил сигнал завершения")
+            break
+        
+        print(f"⚙️  {name} обрабатывает: {task}")
+        time.sleep(random.uniform(0.2, 0.5))  # Имитация работы
+        print(f"✅ {name} завершил: {task}")
+        
+        task_queue.task_done()  # Сообщаем, что задача выполнена
+
+# Запуск производителей
+producer1 = threading.Thread(target=producer, args=("Производитель-1", 5))
+producer2 = threading.Thread(target=producer, args=("Производитель-2", 5))
+
+# Запуск потребителей
+consumer1 = threading.Thread(target=consumer, args=("Потребитель-1",))
+consumer2 = threading.Thread(target=consumer, args=("Потребитель-2",))
+consumer3 = threading.Thread(target=consumer, args=("Потребитель-3",))
+
+# Стартуем потребителей (они будут ждать задачи)
+consumer1.start()
+consumer2.start()
+consumer3.start()
+
+# Стартуем производителей
+producer1.start()
+producer2.start()
+
+# Ждём завершения производителей
+producer1.join()
+producer2.join()
+
+# Ждём, пока все задачи будут выполнены
+task_queue.join()
+
+# Отправляем сигналы завершения потребителям
+for _ in range(3):
+    task_queue.put(None)
+
+# Ждём завершения потребителей
+consumer1.join()
+consumer2.join()
+consumer3.join()
+
+print("\n🎉 Все задачи выполнены!")
+```
+
+### Пример: Скачивание файлов с использованием Queue
+
+```python
+from queue import Queue
+import threading
+import time
+import random
+
+class FileDownloader:
+    """Симулятор скачивания файлов"""
+    
+    def __init__(self, num_workers=3):
+        self.download_queue = Queue()
+        self.num_workers = num_workers
+        self.workers = []
+        self.downloaded = []
+        self.lock = threading.Lock()
+    
+    def download_file(self, url):
+        """Симуляция скачивания файла"""
+        filename = url.split('/')[-1]
+        print(f"📥 Скачивание: {filename}")
+        
+        # Имитация скачивания
+        time.sleep(random.uniform(0.5, 2))
+        
+        # Симуляция размера файла
+        size = random.randint(100, 1000)
+        
+        with self.lock:
+            self.downloaded.append({
+                'file': filename,
+                'size': size,
+                'url': url
+            })
+        
+        print(f"✅ Скачан: {filename} ({size} KB)")
+    
+    def worker(self, worker_id):
+        """Рабочий поток для скачивания"""
+        print(f"🔧 Воркер-{worker_id} запущен")
+        
+        while True:
+            try:
+                # Берём URL из очереди с таймаутом
+                url = self.download_queue.get(timeout=1)
+                
+                if url is None:  # Сигнал завершения
+                    print(f"🛑 Воркер-{worker_id} завершает работу")
+                    break
+                
+                self.download_file(url)
+                self.download_queue.task_done()
+                
+            except Exception as e:
+                print(f"❌ Воркер-{worker_id} ошибка: {e}")
+                break
+    
+    def download_batch(self, urls):
+        """Скачать пакет файлов"""
+        print(f"📦 Начинаем скачивание {len(urls)} файлов\n")
+        
+        # Запускаем воркеров
+        for i in range(self.num_workers):
+            worker = threading.Thread(target=self.worker, args=(i+1,))
+            worker.start()
+            self.workers.append(worker)
+        
+        # Добавляем URLs в очередь
+        for url in urls:
+            self.download_queue.put(url)
+        
+        # Ждём выполнения всех задач
+        self.download_queue.join()
+        
+        # Отправляем сигналы завершения воркерам
+        for _ in range(self.num_workers):
+            self.download_queue.put(None)
+        
+        # Ждём завершения всех воркеров
+        for worker in self.workers:
+            worker.join()
+        
+        # Результаты
+        print(f"\n📊 Статистика:")
+        print(f"  Скачано файлов: {len(self.downloaded)}")
+        total_size = sum(f['size'] for f in self.downloaded)
+        print(f"  Общий размер: {total_size} KB")
+
+# Использование
+downloader = FileDownloader(num_workers=3)
+
+urls = [
+    "https://example.com/file1.pdf",
+    "https://example.com/file2.jpg",
+    "https://example.com/file3.zip",
+    "https://example.com/file4.mp4",
+    "https://example.com/file5.doc",
+    "https://example.com/file6.txt",
+    "https://example.com/file7.png",
+]
+
+downloader.download_batch(urls)
+```
+
+
+### LifoQueue — LIFO очередь (стек)
+
+**LIFO (Last In, First Out)** — последним вошёл, первым вышел. Как стопка тарелок.
+
+```python
+from queue import LifoQueue
+import threading
+
+# Создаём LIFO очередь (стек)
+stack = LifoQueue()
+
+def add_tasks():
+    """Добавляем задачи в стек"""
+    for i in range(1, 6):
+        task = f"Задача {i}"
+        print(f"➕ Добавлена: {task}")
+        stack.put(task)
+
+def process_tasks():
+    """Обрабатываем задачи из стека"""
+    print("\n📤 Обработка задач (в обратном порядке):")
+    while not stack.empty():
+        task = stack.get()
+        print(f"  ⚙️  Обработка: {task}")
+        stack.task_done()
+
+# Использование
+add_tasks()
+process_tasks()
+
+# Вывод:
+# ➕ Добавлена: Задача 1
+# ➕ Добавлена: Задача 2
+# ➕ Добавлена: Задача 3
+# ➕ Добавлена: Задача 4
+# ➕ Добавлена: Задача 5
+#
+# 📤 Обработка задач (в обратном порядке):
+#   ⚙️  Обработка: Задача 5  ← последняя добавленная
+#   ⚙️  Обработка: Задача 4
+#   ⚙️  Обработка: Задача 3
+#   ⚙️  Обработка: Задача 2
+#   ⚙️  Обработка: Задача 1  ← первая добавленная
+```
+
+### Пример: История действий (Undo/Redo)
+
+```python
+from queue import LifoQueue
+import threading
+
+class TextEditor:
+    """Текстовый редактор с историей (Undo)"""
+    
+    def __init__(self):
+        self.text = ""
+        self.history = LifoQueue()  # Стек для истории
+        self.lock = threading.Lock()
+    
+    def type_text(self, new_text):
+        """Напечатать текст"""
+        with self.lock:
+            # Сохраняем текущее состояние в историю
+            self.history.put(self.text)
+            self.text += new_text
+            print(f"✍️  Напечатано: '{new_text}'")
+            print(f"📝 Текст: '{self.text}'")
+    
+    def undo(self):
+        """Отменить последнее действие"""
+        with self.lock:
+            if not self.history.empty():
+                self.text = self.history.get()
+                print(f"↩️  Отмена")
+                print(f"📝 Текст: '{self.text}'")
+            else:
+                print("❌ Нечего отменять")
+
+# Использование
+editor = TextEditor()
+
+editor.type_text("Hello")
+editor.type_text(" World")
+editor.type_text("!")
+print()
+editor.undo()
+print()
+editor.undo()
+
+# Вывод:
+# ✍️  Напечатано: 'Hello'
+# 📝 Текст: 'Hello'
+# ✍️  Напечатано: ' World'
+# 📝 Текст: 'Hello World'
+# ✍️  Напечатано: '!'
+# 📝 Текст: 'Hello World!'
+#
+# ↩️  Отмена
+# 📝 Текст: 'Hello World'
+#
+# ↩️  Отмена
+# 📝 Текст: 'Hello'
+```
+
+
+### PriorityQueue — очередь с приоритетами
+
+Элементы извлекаются в порядке приоритета (меньшее число = выше приоритет).
+
+```python
+from queue import PriorityQueue
+import threading
+import time
+
+# Создаём очередь с приоритетами
+pq = PriorityQueue()
+
+class Task:
+    """Задача с приоритетом"""
+    
+    def __init__(self, priority, name, description):
+        self.priority = priority  # Чем меньше, тем важнее
+        self.name = name
+        self.description = description
+    
+    def __lt__(self, other):
+        """Сравнение для PriorityQueue"""
+        return self.priority < other.priority
+    
+    def __repr__(self):
+        return f"Task(priority={self.priority}, name='{self.name}')"
+
+def add_tasks():
+    """Добавляем задачи с разными приоритетами"""
+    tasks = [
+        Task(3, "Ответить на email", "Обычный приоритет"),
+        Task(1, "Исправить критический баг", "СРОЧНО!"),
+        Task(5, "Обновить документацию", "Низкий приоритет"),
+        Task(2, "Провести код-ревью", "Высокий приоритет"),
+        Task(4, "Рефакторинг кода", "Средний приоритет"),
+    ]
+    
+    print("➕ Добавление задач:")
+    for task in tasks:
+        pq.put(task)
+        print(f"   {task}")
+
+def process_tasks():
+    """Обрабатываем задачи по приоритету"""
+    print("\n⚙️  Обработка задач (по приоритету):")
+    while not pq.empty():
+        task = pq.get()
+        print(f"   🔧 Выполняем: {task.name} (приоритет: {task.priority})")
+        time.sleep(0.5)
+        pq.task_done()
+
+# Использование
+add_tasks()
+process_tasks()
+
+# Вывод:
+# ➕ Добавление задач:
+#    Task(priority=3, name='Ответить на email')
+#    Task(priority=1, name='Исправить критический баг')
+#    Task(priority=5, name='Обновить документацию')
+#    Task(priority=2, name='Провести код-ревью')
+#    Task(priority=4, name='Рефакторинг кода')
+#
+# ⚙️  Обработка задач (по приоритету):
+#    🔧 Выполняем: Исправить критический баг (приоритет: 1)  ← самый важный
+#    🔧 Выполняем: Провести код-ревью (приоритет: 2)
+#    🔧 Выполняем: Ответить на email (приоритет: 3)
+#    🔧 Выполняем: Рефакторинг кода (приоритет: 4)
+#    🔧 Выполняем: Обновить документацию (приоритет: 5)  ← наименее важный
+```
+
+### Пример: Система обработки заявок
+
+```python
+from queue import PriorityQueue
+import threading
+import time
+import random
+
+class Ticket:
+    """Заявка в службу поддержки"""
+    
+    CRITICAL = 1
+    HIGH = 2
+    MEDIUM = 3
+    LOW = 4
+    
+    def __init__(self, ticket_id, priority, customer, issue):
+        self.ticket_id = ticket_id
+        self.priority = priority
+        self.customer = customer
+        self.issue = issue
+    
+    def __lt__(self, other):
+        # Сначала по приоритету, потом по ID (раньше созданные первыми)
+        if self.priority != other.priority:
+            return self.priority < other.priority
+        return self.ticket_id < other.ticket_id
+    
+    def __repr__(self):
+        priority_names = {1: "🔴 КРИТИЧНЫЙ", 2: "🟠 ВЫСОКИЙ", 
+                         3: "🟡 СРЕДНИЙ", 4: "🟢 НИЗКИЙ"}
+        return f"#{self.ticket_id} [{priority_names[self.priority]}] {self.customer}: {self.issue}"
+
+class SupportSystem:
+    """Система обработки заявок"""
+    
+    def __init__(self, num_agents=2):
+        self.ticket_queue = PriorityQueue()
+        self.num_agents = num_agents
+        self.processed = []
+        self.lock = threading.Lock()
+    
+    def submit_ticket(self, ticket):
+        """Подать заявку"""
+        print(f"📨 Новая заявка: {ticket}")
+        self.ticket_queue.put(ticket)
+    
+    def agent_worker(self, agent_id):
+        """Агент обрабатывает заявки"""
+        print(f"👤 Агент-{agent_id} начал работу")
+        
+        while True:
+            try:
+                ticket = self.ticket_queue.get(timeout=2)
+                
+                if ticket is None:
+                    print(f"🛑 Агент-{agent_id} завершает работу")
+                    break
+                
+                print(f"\n👤 Агент-{agent_id} обрабатывает: {ticket}")
+                
+                # Имитация обработки (критичные обрабатываются быстрее)
+                processing_time = 3 - ticket.priority + random.random()
+                time.sleep(processing_time)
+                
+                with self.lock:
+                    self.processed.append(ticket)
+                
+                print(f"✅ Агент-{agent_id} решил заявку #{ticket.ticket_id}")
+                self.ticket_queue.task_done()
+                
+            except:
+                print(f"🛑 Агент-{agent_id} завершает работу (таймаут)")
+                break
+    
+    def start_processing(self):
+        """Запустить обработку заявок"""
+        agents = []
+        for i in range(self.num_agents):
+            agent = threading.Thread(target=self.agent_worker, args=(i+1,))
+            agent.start()
+            agents.append(agent)
+        
+        return agents
+
+# Использование
+support = SupportSystem(num_agents=2)
+
+# Подаём заявки
+tickets = [
+    Ticket(1, Ticket.LOW, "Иван", "Вопрос по функционалу"),
+    Ticket(2, Ticket.CRITICAL, "Мария", "Сайт не работает!"),
+    Ticket(3, Ticket.MEDIUM, "Пётр", "Нужна помощь с настройкой"),
+    Ticket(4, Ticket.HIGH, "Анна", "Ошибка при оплате"),
+    Ticket(5, Ticket.LOW, "Сергей", "Запрос на новую функцию"),
+    Ticket(6, Ticket.CRITICAL, "Ольга", "Потеря данных"),
+    Ticket(7, Ticket.MEDIUM, "Дмитрий", "Медленная работа системы"),
+]
+
+print("=== Подача заявок ===\n")
+for ticket in tickets:
+    support.submit_ticket(ticket)
+    time.sleep(0.2)  # Небольшая задержка между заявками
+
+print("\n=== Начало обработки ===\n")
+agents = support.start_processing()
+
+# Ждём обработки всех заявок
+support.ticket_queue.join()
+
+# Останавливаем агентов
+for _ in range(support.num_agents):
+    support.ticket_queue.put(None)
+
+for agent in agents:
+    agent.join()
+
+# Результаты
+print("\n=== Статистика ===")
+print(f"Обработано заявок: {len(support.processed)}")
+print("\nПорядок обработки:")
+for i, ticket in enumerate(support.processed, 1):
+    print(f"  {i}. {ticket}")
+
+# Вывод покажет, что критичные заявки обработаны первыми:
+# 1. #2 [🔴 КРИТИЧНЫЙ] Мария: Сайт не работает!
+# 2. #6 [🔴 КРИТИЧНЫЙ] Ольга: Потеря данных
+# 3. #4 [🟠 ВЫСОКИЙ] Анна: Ошибка при оплате
+# 4. #3 [🟡 СРЕДНИЙ] Пётр: Нужна помощь с настройкой
+# ...
+```
+
+
+### Сравнение типов очередей
+
+```python
+from queue import Queue, LifoQueue, PriorityQueue
+
+print("=== Демонстрация разных типов очередей ===\n")
+
+# FIFO Queue
+print("1️⃣ Queue (FIFO):")
+fifo = Queue()
+for i in [1, 2, 3, 4, 5]:
+    fifo.put(i)
+
+print("   Добавлено: 1, 2, 3, 4, 5")
+print("   Извлечение:", end=" ")
+while not fifo.empty():
+    print(fifo.get(), end=" ")
+print(" (первым вошёл - первым вышел)\n")
+
+# LIFO Queue (Stack)
+print("2️⃣ LifoQueue (LIFO/Stack):")
+lifo = LifoQueue()
+for i in [1, 2, 3, 4, 5]:
+    lifo.put(i)
+
+print("   Добавлено: 1, 2, 3, 4, 5")
+print("   Извлечение:", end=" ")
+while not lifo.empty():
+    print(lifo.get(), end=" ")
+print(" (последним вошёл - первым вышел)\n")
+
+# Priority Queue
+print("3️⃣ PriorityQueue:")
+pq = PriorityQueue()
+# Добавляем пары (приоритет, значение)
+for priority, value in [(3, "C"), (1, "A"), (5, "E"), (2, "B"), (4, "D")]:
+    pq.put((priority, value))
+
+print("   Добавлено: (3,C), (1,A), (5,E), (2,B), (4,D)")
+print("   Извлечение:", end=" ")
+while not pq.empty():
+    priority, value = pq.get()
+    print(f"{value}", end=" ")
+print(" (по возрастанию приоритета)")
+```
+
+
+### Полезные методы Queue
+
+```python
+from queue import Queue, Empty, Full
+import threading
+import time
+
+# Создание очереди с ограниченным размером
+limited_queue = Queue(maxsize=3)
+
+print("=== Методы Queue ===\n")
+
+# 1. put() - добавить элемент
+print("1. put() - добавление элементов:")
+limited_queue.put("Задача 1")
+print("   ✅ Добавлена: Задача 1")
+limited_queue.put("Задача 2")
+print("   ✅ Добавлена: Задача 2")
+limited_queue.put("Задача 3")
+print("   ✅ Добавлена: Задача 3")
+
+# 2. full() - проверка на заполненность
+print(f"\n2. full() - Очередь заполнена? {limited_queue.full()}")
+
+# 3. put_nowait() - добавить без ожидания (вызовет исключение если полная)
+print("\n3. put_nowait() - попытка добавить в полную очередь:")
+try:
+    limited_queue.put_nowait("Задача 4")
+except Full:
+    print("   ❌ Ошибка: очередь заполнена!")
+
+# 4. get() - извлечь элемент
+print("\n4. get() - извлечение элементов:")
+task = limited_queue.get()
+print(f"   📤 Извлечено: {task}")
+
+# 5. empty() - проверка на пустоту
+print(f"\n5. empty() - Очередь пуста? {limited_queue.empty()}")
+
+# 6. qsize() - размер очереди
+print(f"\n6. qsize() - Элементов в очереди: {limited_queue.qsize()}")
+
+# 7. get() с timeout
+print("\n7. get(timeout) - извлечение с таймаутом:")
+try:
+    task = limited_queue.get(timeout=1)
+    print(f"   📤 Извлечено: {task}")
+    
+    task = limited_queue.get(timeout=1)
+    print(f"   📤 Извлечено: {task}")
+    
+    # Очередь пуста, будет ждать 1 секунду
+    task = limited_queue.get(timeout=1)
+except Empty:
+    print("   ⏱️ Таймаут: очередь пуста!")
+
+# 8. task_done() и join()
+print("\n8. task_done() и join() - ожидание выполнения:")
+
+work_queue = Queue()
+
+def worker():
+    while True:
+        item = work_queue.get()
+        if item is None:
+            break
+        print(f"   ⚙️  Обработка: {item}")
+        time.sleep(0.5)
+        work_queue.task_done()  # Сообщаем, что задача выполнена
+
+# Запускаем воркер
+thread = threading.Thread(target=worker)
+thread.start()
+
+# Добавляем задачи
+for i in range(3):
+    work_queue.put(f"Задача {i+1}")
+
+# Ждём выполнения всех задач
+print("   ⏳ Ожидание выполнения всех задач...")
+work_queue.join()
+print("   ✅ Все задачи выполнены!")
+
+# Останавливаем воркер
+work_queue.put(None)
+thread.join()
+```
+
+
+### Практический пример: Web Scraper с очередями
+
+```python
+from queue import Queue, PriorityQueue
+import threading
+import time
+import random
+
+class WebPage:
+    """Веб-страница для скрейпинга"""
+    
+    def __init__(self, url, priority=5):
+        self.url = url
+        self.priority = priority
+        self.content = None
+        self.links = []
+    
+    def __lt__(self, other):
+        return self.priority < other.priority
+    
+    def __repr__(self):
+        return f"WebPage('{self.url}', priority={self.priority})"
+
+class WebScraper:
+    """Многопоточный веб-скрейпер"""
+    
+    def __init__(self, num_workers=3):
+        self.url_queue = PriorityQueue()
+        self.result_queue = Queue()
+        self.visited = set()
+        self.lock = threading.Lock()
+        self.num_workers = num_workers
+        self.workers = []
+    
+    def fetch_page(self, page):
+        """Симуляция скачивания страницы"""
+        print(f"🌐 Скачивание: {page.url}")
+        
+        # Имитация HTTP запроса
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        # Симуляция контента
+        page.content = f"Контент страницы {page.url}"
+        
+        # Симуляция найденных ссылок
+        if "page" in page.url:
+            page_num = int(page.url.split("page")[1])
+            if page_num < 10:  # Ограничение глубины
+                page.links = [
+                    f"https://example.com/page{page_num + 1}",
+                    f"https://example.com/page{page_num + 2}"
+                ]
+        
+        print(f"✅ Скачано: {page.url} (найдено {len(page.links)} ссылок)")
+        return page
+    
+    def worker(self, worker_id):
+        """Рабочий поток"""
+        print(f"🔧 Воркер-{worker_id} запущен")
+        
+        while True:
+            try:
+                page = self.url_queue.get(timeout=3)
+                
+                if page is None:
+                    print(f"🛑 Воркер-{worker_id} завершает работу")
+                    break
+                
+                # Проверяем, не посещали ли мы эту страницу
+                with self.lock:
+                    if page.url in self.visited:
+                        self.url_queue.task_done()
+                        continue
+                    self.visited.add(page.url)
+                
+                # Скачиваем страницу
+                page = self.fetch_page(page)
+                
+                # Добавляем найденные ссылки в очередь
+                for link in page.links:
+                    new_page = WebPage(link, priority=page.priority + 1)
+                    self.url_queue.put(new_page)
+                
+                # Сохраняем результат
+                self.result_queue.put(page)
+                
+                self.url_queue.task_done()
+                
+            except Exception as e:
+                print(f"⚠️ Воркер-{worker_id}: {e}")
+                break
+    
+    def scrape(self, start_urls):
+        """Начать скрейпинг"""
+        print(f"🚀 Начало скрейпинга с {len(start_urls)} стартовых URL\n")
+        
+        # Добавляем стартовые URL
+        for url in start_urls:
+            self.url_queue.put(WebPage(url, priority=1))
+        
+        # Запускаем воркеров
+        for i in range(self.num_workers):
+            worker = threading.Thread(target=self.worker, args=(i+1,))
+            worker.start()
+            self.workers.append(worker)
+        
+        # Ждём выполнения
+        self.url_queue.join()
+        
+        # Останавливаем воркеров
+        for _ in range(self.num_workers):
+            self.url_queue.put(None)
+        
+        for worker in self.workers:
+            worker.join()
+        
+        # Собираем результаты
+        results = []
+        while not self.result_queue.empty():
+            results.append(self.result_queue.get())
+        
+        print(f"\n📊 Статистика:")
+        print(f"  Скачано страниц: {len(results)}")
+        print(f"  Посещено URL: {len(self.visited)}")
+        
+        return results
+
+# Использование
+scraper = WebScraper(num_workers=2)
+
+start_urls = [
+    "https://example.com/page1",
+    "https://example.com/page2",
+]
+
+results = scraper.scrape(start_urls)
+
+print("\n📄 Скачанные страницы:")
+for page in results[:5]:  # Показываем первые 5
+    print(f"  - {page.url}")
+```
+
+
+### Резюме по модулю queue
+
+#### Преимущества использования queue:
+
+1. **Потокобезопасность** — не нужны дополнительные блокировки
+2. **Простота** — легко организовать producer-consumer паттерн
+3. **Гибкость** — разные типы очередей для разных задач
+4. **Надёжность** — встроенные механизмы для отслеживания выполнения задач
+
+### Когда использовать какую очередь:
+
+| Тип очереди | Использование | Пример |
+|-------------|---------------|--------|
+| **Queue (FIFO)** | Стандартная обработка задач по порядку | Обработка запросов, скачивание файлов |
+| **LifoQueue (LIFO)** | Нужна обработка в обратном порядке | История действий (Undo), обход графа в глубину |
+| **PriorityQueue** | Задачи с разными приоритетами | Служба поддержки, планировщик задач |
+
+#### Основные методы:
+
+```python
+# Добавление элементов
+queue.put(item)              # Блокируется если очередь полная
+queue.put(item, block=False) # Вызовет Full если полная
+queue.put_nowait(item)       # То же что и block=False
+
+# Извлечение элементов
+item = queue.get()              # Блокируется если пустая
+item = queue.get(timeout=5)     # Ждёт максимум 5 секунд
+item = queue.get_nowait()       # Вызовет Empty если пустая
+
+# Проверки
+queue.empty()    # Пустая ли очередь
+queue.full()     # Заполнена ли очередь
+queue.qsize()    # Количество элементов
+
+# Синхронизация
+queue.task_done()  # Сообщить, что задача выполнена
+queue.join()       # Ждать выполнения всех задач
+```
+
+### Паттерн Producer-Consumer:
+
+```python
+from queue import Queue
+import threading
+
+def producer(queue, items):
+    """Производитель добавляет задачи"""
+    for item in items:
+        queue.put(item)
+
+def consumer(queue):
+    """Потребитель обрабатывает задачи"""
+    while True:
+        item = queue.get()
+        if item is None:  # Сигнал завершения
+            break
+        # Обработка item
+        queue.task_done()
+
+# Использование
+q = Queue()
+
+# Запускаем потребителей
+consumers = [threading.Thread(target=consumer, args=(q,)) for _ in range(3)]
+for c in consumers:
+    c.start()
+
+# Запускаем производителей
+producer(q, range(100))
+
+# Ждём выполнения
+q.join()
+
+# Останавливаем потребителей
+for _ in consumers:
+    q.put(None)
+for c in consumers:
+    c.join()
+```
+
+**Правило**: Используйте `queue` вместо ручных блокировок для обмена данными между потоками — это проще, безопаснее и надёжнее!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## `32.12` threading.local() — thread-local данные
 ## `32.13` concurrent.futures.ThreadPoolExecutor — пул потоков для упрощённой работы
 ## `32.14` Контекстный менеджер для работы с блокировками
