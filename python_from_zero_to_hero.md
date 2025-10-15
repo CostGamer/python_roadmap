@@ -2,6 +2,7 @@
 - Все что не отмечено звездочкой надо точно и уверено знать  
 - `*` - must have for interview  
 - `**` - for flex in the interview
+- `Долг знаний` — нормальная ситуация, никто не может знать всё. Главное — осознавать, что существует необходимость постоянного обучения и уметь быстро находить нужную информацию
 
 ----
 
@@ -41670,20 +41671,2322 @@ asyncio.run(main())
 ----
 
 # `34` (`*`) Логирование
+[Статья про Логирование](https://habr.com/ru/companies/wunderfund/articles/683880/)
+[Видео про Логирование](https://youtu.be/0-nJiNlhHUo?si=_eaGl8A19QyH-QK2)
+
 ## `34.1` Что такое логирование и зачем оно нужно
+
+**Логирование** — это процесс записи событий, которые происходят во время работы программы. Представь, что твоя программа ведёт дневник: что она делала, какие ошибки встретила, какие важные решения принимала.
+
+### Зачем это нужно?
+
+1. **Отладка** — понять, где программа сломалась и почему
+2. **Мониторинг** — следить за работой приложения в реальном времени
+3. **Аудит** — знать, кто и когда делал определённые действия
+4. **Анализ** — изучать поведение программы и находить узкие места
+
+### Простой пример из жизни
+
+Представь интернет-магазин:
+- Пользователь зашёл на сайт → **записали в лог**
+- Добавил товар в корзину → **записали в лог**
+- Произошла ошибка при оплате → **записали в лог с деталями**
+- Заказ успешно оформлен → **записали в лог**
+
+Если клиент жалуется, что оплата не прошла, ты открываешь логи и видишь точную последовательность событий и причину ошибки.
+
 ## `34.2` Логирование vs `print()` — основные различия
+Многие начинающие разработчики используют `print()` для отладки. Это работает, но у логирования есть огромные преимущества.
+
+### Сравнительная таблица
+
+| Характеристика | `print()` | Логирование |
+|----------------|-----------|-------------|
+| **Уровни важности** | Нет | Есть (DEBUG, INFO, ERROR и т.д.) |
+| **Включение/выключение** | Надо удалять из кода | Можно отключить одной строкой |
+| **Запись в файл** | Сложно | Легко настраивается |
+| **Форматирование** | Ручное | Автоматическое (время, уровень, модуль) |
+| **Фильтрация** | Невозможна | Можно показывать только ошибки |
+| **В production** | Нужно удалять | Остаётся в коде |
+
+### Почему `print()` — это плохо для больших проектов?
+
+```python
+# Плохой подход с print()
+def divide(a, b):
+    print(f"Делим {a} на {b}")  # Отладочное сообщение
+    if b == 0:
+        print("ОШИБКА: деление на ноль!")  # Ошибка
+        return None
+    result = a / b
+    print(f"Результат: {result}")  # Информация
+    return result
+
+# Проблемы:
+# 1. Все сообщения выглядят одинаково
+# 2. Нельзя отключить отладочные print, не трогая код
+# 3. Всё идёт только в консоль
+# 4. Нет временных меток
+# 5. В production придётся удалять или комментировать
+```
+
 ## `34.3` Модуль `logging` — стандартный инструмент
+Python имеет встроенный модуль `logging`, который решает все проблемы `print()`. Он входит в стандартную библиотеку, поэтому ничего устанавливать не нужно.
+
+### Простейший пример
+
+```python
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+
+# Используем логирование
+logging.info("Программа запущена")
+logging.warning("Это предупреждение")
+logging.error("Произошла ошибка")
+```
+
+**Вывод:**
+```
+INFO:root:Программа запущена
+WARNING:root:Это предупреждение
+ERROR:root:Произошла ошибка
+```
+
+Обрати внимание: каждое сообщение содержит уровень важности (`INFO`, `WARNING`, `ERROR`) и имя логгера (`root`).
+
 ## `34.4` Уровни логирования — `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+Уровни логирования — это степень важности сообщения. Они позволяют фильтровать информацию: показывать только важное или абсолютно всё.
+
+### Пять основных уровней (от менее важного к более важному)
+
+| Уровень | Число | Когда использовать | Пример |
+|---------|-------|-------------------|---------|
+| **DEBUG** | 10 | Детальная информация для отладки | "Переменная x = 42" |
+| **INFO** | 20 | Подтверждение, что всё работает | "Сервер запущен на порту 8000" |
+| **WARNING** | 30 | Что-то неожиданное, но программа работает | "Диск заполнен на 90%" |
+| **ERROR** | 40 | Ошибка, часть функционала не работает | "Не удалось подключиться к БД" |
+| **CRITICAL** | 50 | Критическая ошибка, программа может упасть | "Закончилась память" |
+
+### Принцип работы
+
+Когда ты устанавливаешь уровень логирования, показываются сообщения **этого уровня и выше**:
+
+```python
+import logging
+
+# Установим уровень WARNING
+logging.basicConfig(level=logging.WARNING)
+
+logging.debug("Это DEBUG")        # НЕ покажется (уровень ниже)
+logging.info("Это INFO")          # НЕ покажется (уровень ниже)
+logging.warning("Это WARNING")    # Покажется ✓
+logging.error("Это ERROR")        # Покажется ✓
+logging.critical("Это CRITICAL")  # Покажется ✓
+```
+
+**Вывод:**
+```
+WARNING:root:Это WARNING
+ERROR:root:Это ERROR
+CRITICAL:root:Это CRITICAL
+```
+
+### Примеры использования
+
+#### Пример 1: Веб-приложение
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def process_user_request(user_id, action):
+    logging.info(f"Пользователь {user_id} выполняет действие: {action}")
+    
+    if action == "delete_account":
+        logging.warning(f"Пользователь {user_id} удаляет аккаунт!")
+    
+    try:
+        # Какая-то операция
+        if user_id < 0:
+            raise ValueError("Неверный ID пользователя")
+        logging.debug(f"Обработка для пользователя {user_id} завершена")
+    except ValueError as e:
+        logging.error(f"Ошибка обработки: {e}")
+
+# Использование
+process_user_request(123, "login")
+process_user_request(456, "delete_account")
+process_user_request(-1, "login")
+```
+
+**Вывод:**
+```
+2025-10-15 10:30:45,123 - INFO - Пользователь 123 выполняет действие: login
+2025-10-15 10:30:45,124 - INFO - Пользователь 456 выполняет действие: delete_account
+2025-10-15 10:30:45,125 - WARNING - Пользователь 456 удаляет аккаунт!
+2025-10-15 10:30:45,126 - INFO - Пользователь -1 выполняет действие: login
+2025-10-15 10:30:45,127 - ERROR - Ошибка обработки: Неверный ID пользователя
+```
+
+#### Пример 2: Обработка файлов
+
+```python
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+def read_config(filename):
+    logging.debug(f"Попытка чтения файла конфигурации: {filename}")
+    
+    try:
+        with open(filename, 'r') as f:
+            content = f.read()
+            logging.info(f"Файл {filename} успешно прочитан")
+            return content
+    except FileNotFoundError:
+        logging.error(f"Файл {filename} не найден!")
+        return None
+    except PermissionError:
+        logging.critical(f"Нет прав для чтения файла {filename}!")
+        return None
+
+# Тестируем
+config = read_config("settings.txt")
+```
+
+**Возможный вывод (если файл не существует):**
+```
+DEBUG:root:Попытка чтения файла конфигурации: settings.txt
+ERROR:root:Файл settings.txt не найден!
+```
+
+#### Пример 3: Математические вычисления с разными уровнями
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[%(levelname)s] %(message)s'
+)
+
+def calculate_average(numbers):
+    logging.debug(f"Входные данные: {numbers}")
+    
+    if not numbers:
+        logging.error("Передан пустой список!")
+        return None
+    
+    if not all(isinstance(n, (int, float)) for n in numbers):
+        logging.error("Список содержит не-числовые значения!")
+        return None
+    
+    if len(numbers) > 1000:
+        logging.warning(f"Большой список ({len(numbers)} элементов), обработка может быть медленной")
+    
+    average = sum(numbers) / len(numbers)
+    logging.info(f"Среднее значение рассчитано: {average:.2f}")
+    
+    return average
+
+# Тесты
+calculate_average([1, 2, 3, 4, 5])
+calculate_average([])
+calculate_average([1, "два", 3])
+calculate_average(list(range(1500)))
+```
+
+**Вывод:**
+```
+[DEBUG] Входные данные: [1, 2, 3, 4, 5]
+[INFO] Среднее значение рассчитано: 3.00
+[DEBUG] Входные данные: []
+[ERROR] Передан пустой список!
+[DEBUG] Входные данные: [1, 'два', 3]
+[ERROR] Список содержит не-числовые значения!
+[DEBUG] Входные данные: [0, 1, 2, 3, 4, ...]
+[WARNING] Большой список (1500 элементов), обработка может быть медленной
+[INFO] Среднее значение рассчитано: 749.50
+```
+
 ## `34.5` Базовое логирование — `logging.basicConfig()` и простые функции
+`basicConfig()` — это самый простой способ настроить логирование. Одна функция, которая настраивает всё базовое: куда писать логи, какой формат использовать, какой минимальный уровень показывать.
+
+**Важно:** `basicConfig()` нужно вызывать **один раз в начале программы**. Повторные вызовы ничего не изменят, если логирование уже настроено.
+
+### Основные параметры `basicConfig()`
+
+| Параметр | Описание | Пример значения |
+|----------|----------|-----------------|
+| `level` | Минимальный уровень логирования | `logging.DEBUG` |
+| `format` | Формат сообщений | `'%(levelname)s - %(message)s'` |
+| `filename` | Файл для записи логов | `'app.log'` |
+| `filemode` | Режим открытия файла | `'w'` (перезапись) или `'a'` (добавление) |
+| `datefmt` | Формат даты/времени | `'%Y-%m-%d %H:%M:%S'` |
+| `encoding` | Кодировка файла | `'utf-8'` |
+
+
+### Простые функции логирования
+
+После настройки `basicConfig()` ты можешь использовать пять основных функций:
+
+```python
+import logging
+
+logging.debug("Отладочное сообщение")
+logging.info("Информационное сообщение")
+logging.warning("Предупреждение")
+logging.error("Ошибка")
+logging.critical("Критическая ошибка")
+```
+
+Эти функции работают с **корневым логгером** (`root`), который создаётся автоматически.
+
+### Примеры использования
+
+#### Пример 1: Минимальная настройка
+
+```python
+import logging
+
+# Самая простая настройка
+logging.basicConfig(level=logging.INFO)
+
+logging.debug("Это не покажется")
+logging.info("Программа запущена")
+logging.warning("Внимание!")
+logging.error("Что-то пошло не так")
+```
+
+**Вывод:**
+```
+INFO:root:Программа запущена
+WARNING:root:Внимание!
+ERROR:root:Что-то пошло не так
+```
+
+#### Пример 2: Красивый формат с временем
+
+```python
+import logging
+
+# Настройка с форматированием
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s | %(levelname)-8s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+logging.debug("Начинаем обработку данных")
+logging.info("Подключение к базе данных установлено")
+logging.warning("Кеш почти заполнен (85%)")
+logging.error("Не удалось сохранить файл")
+logging.critical("Система перегружена!")
+```
+
+**Вывод:**
+```
+2025-10-15 14:23:10 | DEBUG    | Начинаем обработку данных
+2025-10-15 14:23:10 | INFO     | Подключение к базе данных установлено
+2025-10-15 14:23:10 | WARNING  | Кеш почти заполнен (85%)
+2025-10-15 14:23:10 | ERROR    | Не удалось сохранить файл
+2025-10-15 14:23:10 | CRITICAL | Система перегружена!
+```
+
+**Разбор формата:**
+- `%(asctime)s` — время события
+- `%(levelname)-8s` — уровень логирования (выровнен по 8 символам)
+- `%(message)s` — само сообщение
+
+#### Пример 3: Запись в файл
+
+```python
+import logging
+
+# Логи будут записываться в файл
+logging.basicConfig(
+    level=logging.INFO,
+    filename='application.log',
+    filemode='a',  # 'a' = append (добавлять), 'w' = write (перезаписывать)
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    encoding='utf-8'
+)
+
+logging.info("Приложение запущено")
+logging.warning("Свободного места на диске: 5%")
+logging.error("Ошибка подключения к API")
+
+print("Логи записаны в файл application.log")
+```
+
+**Содержимое файла `application.log`:**
+```
+2025-10-15 14:30:00,123 - INFO - Приложение запущено
+2025-10-15 14:30:00,124 - WARNING - Свободного места на диске: 5%
+2025-10-15 14:30:00,125 - ERROR - Ошибка подключения к API
+```
+
+
+#### Пример 4: Практический пример — парсер веб-страниц
+
+```python
+import logging
+import time
+
+# Настройка логирования для веб-парсера
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S'
+)
+
+def parse_website(url):
+    logging.info(f"Начинаем парсинг: {url}")
+    
+    # Имитация загрузки страницы
+    time.sleep(1)
+    
+    if "example.com" not in url:
+        logging.warning(f"Подозрительный URL: {url}")
+    
+    try:
+        # Имитация парсинга
+        logging.debug("Загрузка HTML...")
+        logging.debug("Поиск нужных элементов...")
+        
+        # Имитация ошибки
+        if "broken" in url:
+            raise ConnectionError("Сайт не отвечает")
+        
+        logging.info(f"Парсинг завершён: {url}")
+        return True
+        
+    except ConnectionError as e:
+        logging.error(f"Ошибка парсинга {url}: {e}")
+        return False
+
+# Тестируем
+urls = [
+    "https://example.com/page1",
+    "https://suspicious-site.ru/data",
+    "https://example.com/broken"
+]
+
+for url in urls:
+    parse_website(url)
+    print()  # Пустая строка для читаемости
+```
+
+**Вывод:**
+```
+[14:35:01] INFO: Начинаем парсинг: https://example.com/page1
+[14:35:02] INFO: Парсинг завершён: https://example.com/page1
+
+[14:35:02] INFO: Начинаем парсинг: https://suspicious-site.ru/data
+[14:35:02] WARNING: Подозрительный URL: https://suspicious-site.ru/data
+[14:35:03] INFO: Парсинг завершён: https://suspicious-site.ru/data
+
+[14:35:03] INFO: Начинаем парсинг: https://example.com/broken
+[14:35:04] ERROR: Ошибка парсинга https://example.com/broken: Сайт не отвечает
+```
+
+#### Пример 5: Полезные переменные форматирования
+
+```python
+import logging
+
+# Используем разные переменные в формате
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s | %(name)s | %(levelname)s | %(filename)s:%(lineno)d | %(message)s'
+)
+
+def calculate(a, b):
+    logging.debug(f"Вычисляем сумму {a} + {b}")
+    result = a + b
+    logging.info(f"Результат: {result}")
+    return result
+
+calculate(10, 20)
+```
+
+**Вывод:**
+```
+2025-10-15 14:40:00,123 | root | DEBUG | script.py:10 | Вычисляем сумму 10 + 20
+2025-10-15 14:40:00,124 | root | INFO | script.py:12 | Результат: 30
+```
+
+**Полезные переменные форматирования:**
+- `%(name)s` — имя логгера
+- `%(filename)s` — имя файла
+- `%(lineno)d` — номер строки
+- `%(funcName)s` — имя функции
+- `%(process)d` — ID процесса
+- `%(thread)d` — ID потока
+
+### Ограничения `basicConfig()`
+
+`basicConfig()` отлично подходит для простых скриптов, но имеет ограничения:
+
+1. **Нельзя логировать одновременно в консоль И файл** (выбирается что-то одно)
+2. **Настройки применяются ко всей программе** (нельзя разные настройки для разных модулей)
+3. **Работает только при первом вызове** (последующие вызовы игнорируются)
+
+Для более гибкой настройки используются **Logger**, **Handler** и **Formatter** — о них дальше!
+
 ## `34.6` Logger — создание именованных логгеров через `logging.getLogger()`
+**Logger** (логгер) — это объект, который отвечает за создание логов. До этого мы использовали **корневой логгер** (`root`) через функции типа `logging.info()`. Но в реальных проектах лучше создавать **именованные логгеры** для разных частей программы.
+
+### Зачем нужны именованные логгеры?
+
+Представь большое приложение:
+- Модуль работы с базой данных → свой логгер `database`
+- Модуль API → свой логгер `api`
+- Модуль обработки платежей → свой логгер `payments`
+
+Каждый логгер можно настроить по-своему: разные уровни, разные файлы, разные форматы.
+
+### Создание логгера
+
+```python
+import logging
+
+# Создание именованного логгера
+logger = logging.getLogger('my_app')
+
+# Настройка (если нужно)
+logger.setLevel(logging.DEBUG)
+
+# Использование
+logger.debug("Это отладочное сообщение")
+logger.info("Это информация")
+logger.error("Это ошибка")
+```
+
+**Важно:** Имя логгера обычно совпадает с именем модуля. Есть специальная переменная `__name__`, которая содержит имя текущего модуля:
+
+```python
+logger = logging.getLogger(__name__)
+```
+
+### Иерархия логгеров
+
+Логгеры организованы в **иерархию**, как файловая система:
+
+```
+root
+├── app
+│   ├── app.database
+│   ├── app.api
+│   └── app.utils
+└── tests
+```
+
+Логгер `app.database` является **дочерним** для `app`, а `app` — дочерним для `root`.
+
+**Важное свойство:** Если дочернему логгеру не установлены настройки, он **наследует** их от родительского.
+
+### Примеры
+
+#### Пример 1: Базовое использование именованных логгеров
+
+```python
+import logging
+
+# Настраиваем базовое логирование
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(name)s | %(levelname)s | %(message)s'
+)
+
+# Создаём логгеры для разных модулей
+database_logger = logging.getLogger('app.database')
+api_logger = logging.getLogger('app.api')
+payment_logger = logging.getLogger('app.payment')
+
+# Используем их
+database_logger.info("Подключение к PostgreSQL установлено")
+api_logger.warning("Превышен лимит запросов: 1000/час")
+payment_logger.error("Ошибка обработки платежа #12345")
+database_logger.debug("Выполнен запрос: SELECT * FROM users")
+```
+
+**Вывод:**
+```
+app.database | INFO | Подключение к PostgreSQL установлено
+app.api | WARNING | Превышен лимит запросов: 1000/час
+app.payment | ERROR | Ошибка обработки платежа #12345
+```
+
+Обрати внимание: `DEBUG` сообщение не показалось, потому что базовый уровень — `INFO`.
+
+
+#### Пример 2: Разные уровни для разных логгеров
+
+```python
+import logging
+
+# Базовая настройка
+logging.basicConfig(
+    level=logging.WARNING,  # По умолчанию только WARNING и выше
+    format='%(name)-20s | %(levelname)-8s | %(message)s'
+)
+
+# Создаём логгеры
+main_logger = logging.getLogger('main')
+db_logger = logging.getLogger('database')
+cache_logger = logging.getLogger('cache')
+
+# Для database хотим видеть всё, включая DEBUG
+db_logger.setLevel(logging.DEBUG)
+
+# Для cache достаточно INFO
+cache_logger.setLevel(logging.INFO)
+
+# Тестируем
+main_logger.debug("Это не покажется")      # Уровень WARNING
+main_logger.warning("Это покажется")       # ✓
+
+db_logger.debug("SQL запрос выполнен")     # ✓ Уровень DEBUG
+db_logger.info("Транзакция завершена")     # ✓
+
+cache_logger.debug("Это не покажется")     # Уровень INFO
+cache_logger.info("Кеш обновлён")          # ✓
+```
+
+**Вывод:**
+```
+main                 | WARNING  | Это покажется
+database             | DEBUG    | SQL запрос выполнен
+database             | INFO     | Транзакция завершена
+cache                | INFO     | Кеш обновлён
+```
+
+
+#### Пример 3: Практический пример — многомодульное приложение
+
+**Файл: `database.py`**
+```python
+import logging
+
+# Создаём логгер для модуля database
+logger = logging.getLogger(__name__)  # __name__ будет 'database'
+
+def connect_to_db():
+    logger.info("Подключаемся к базе данных...")
+    logger.debug("Параметры подключения: host=localhost, port=5432")
+    # Имитация подключения
+    logger.info("Подключение успешно установлено")
+
+def execute_query(query):
+    logger.debug(f"Выполняем запрос: {query}")
+    # Имитация выполнения
+    if "DROP" in query:
+        logger.critical(f"ОПАСНЫЙ ЗАПРОС: {query}")
+        return False
+    logger.info("Запрос выполнен успешно")
+    return True
+```
+
+**Файл: `api.py`**
+```python
+import logging
+
+logger = logging.getLogger(__name__)  # __name__ будет 'api'
+
+def handle_request(endpoint, user_id):
+    logger.info(f"Получен запрос к {endpoint} от пользователя {user_id}")
+    
+    if user_id is None:
+        logger.warning(f"Неавторизованный запрос к {endpoint}")
+        return {"error": "Unauthorized"}
+    
+    logger.debug(f"Обрабатываем запрос для пользователя {user_id}")
+    return {"status": "ok"}
+```
+
+**Файл: `main.py`**
+```python
+import logging
+import database
+import api
+
+# Настраиваем логирование для всего приложения
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s',
+    datefmt='%H:%M:%S'
+)
+
+# Главный логгер приложения
+logger = logging.getLogger(__name__)  # __name__ будет '__main__'
+
+def main():
+    logger.info("=== Запуск приложения ===")
+    
+    # Работа с базой данных
+    database.connect_to_db()
+    database.execute_query("SELECT * FROM users")
+    database.execute_query("DROP TABLE users")
+    
+    print()  # Разделитель
+    
+    # Обработка API запросов
+    api.handle_request("/api/users", user_id=123)
+    api.handle_request("/api/admin", user_id=None)
+    
+    logger.info("=== Приложение завершено ===")
+
+if __name__ == "__main__":
+    main()
+```
+
+**Вывод:**
+```
+15:20:01 | __main__     | INFO     | === Запуск приложения ===
+15:20:01 | database     | INFO     | Подключаемся к базе данных...
+15:20:01 | database     | DEBUG    | Параметры подключения: host=localhost, port=5432
+15:20:01 | database     | INFO     | Подключение успешно установлено
+15:20:01 | database     | DEBUG    | Выполняем запрос: SELECT * FROM users
+15:20:01 | database     | INFO     | Запрос выполнен успешно
+15:20:01 | database     | DEBUG    | Выполняем запрос: DROP TABLE users
+15:20:01 | database     | CRITICAL | ОПАСНЫЙ ЗАПРОС: DROP TABLE users
+
+15:20:01 | api          | INFO     | Получен запрос к /api/users от пользователя 123
+15:20:01 | api          | DEBUG    | Обрабатываем запрос для пользователя 123
+15:20:01 | api          | INFO     | Получен запрос к /api/admin от пользователя None
+15:20:01 | api          | WARNING  | Неавторизованный запрос к /api/admin
+15:20:01 | __main__     | INFO     | === Приложение завершено ===
+```
+
+Видишь? Каждый модуль логирует от своего имени, и легко понять, откуда пришло сообщение!
+
+
+#### Пример 4: Отключение логгера
+
+```python
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+logger = logging.getLogger('noisy_module')
+
+# Отключаем этот логгер
+logger.disabled = True
+
+logger.debug("Это не покажется")
+logger.error("Это тоже не покажется")
+
+# Включаем обратно
+logger.disabled = False
+logger.info("А это покажется")
+```
+
+**Вывод:**
+```
+INFO:noisy_module:А это покажется
+```
+
+### Лучшие практики
+
+1. **Всегда используй `__name__`** при создании логгера:
+   ```python
+   logger = logging.getLogger(__name__)
+   ```
+
+2. **Создавай логгер в начале каждого модуля** (после импортов):
+   ```python
+   import logging
+   import requests
+   
+   logger = logging.getLogger(__name__)
+   ```
+
+3. **Не настраивай логгеры в библиотеках** — настройка должна быть в главном файле приложения
+
+4. **Используй понятные имена** для логгеров в соответствии со структурой проекта
+
 ## `34.7` Handler — куда отправляются логи:
-- `StreamHandler` — консоль
-- `FileHandler` — файл
-- `RotatingFileHandler` — ротация файлов
+**Handler** (обработчик) определяет, **куда** будут отправляться логи: в консоль, в файл, по email, в сеть и т.д. Один логгер может иметь **несколько обработчиков**, чтобы логи шли одновременно в разные места.
+
+### Схема работы
+
+```
+Logger → Handler #1 (консоль) → вывод в терминал
+      → Handler #2 (файл)    → запись в app.log
+      → Handler #3 (email)   → отправка письма
+```
+
+### Основные типы Handler'ов
+
+#### 1. `StreamHandler` — вывод в консоль
+
+Отправляет логи в поток (обычно в консоль/терминал).
+
+```python
+import logging
+
+# Создаём логгер
+logger = logging.getLogger('my_app')
+logger.setLevel(logging.DEBUG)
+
+# Создаём handler для консоли
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)  # В консоль только INFO и выше
+
+# Создаём formatter
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Добавляем handler к логгеру
+logger.addHandler(console_handler)
+
+# Используем
+logger.debug("Это не покажется в консоли")
+logger.info("Это покажется в консоли")
+logger.error("Это тоже покажется")
+```
+
+**Вывод:**
+```
+my_app - INFO - Это покажется в консоли
+my_app - ERROR - Это тоже покажется
+```
+
+
+#### 2. `FileHandler` — запись в файл
+
+Записывает логи в файл.
+
+```python
+import logging
+
+logger = logging.getLogger('file_logger')
+logger.setLevel(logging.DEBUG)
+
+# Создаём handler для файла
+file_handler = logging.FileHandler('app.log', encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+
+# Форматтер
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+
+# Добавляем handler
+logger.addHandler(file_handler)
+
+# Логируем
+logger.debug("Отладочная информация")
+logger.info("Приложение запущено")
+logger.error("Произошла ошибка")
+```
+
+**Содержимое `app.log`:**
+```
+2025-10-15 16:30:00,123 - file_logger - DEBUG - Отладочная информация
+2025-10-15 16:30:00,124 - file_logger - INFO - Приложение запущено
+2025-10-15 16:30:00,125 - file_logger - ERROR - Произошла ошибка
+```
+
+
+#### 3. `RotatingFileHandler` — ротация файлов
+
+Когда лог-файл достигает определённого размера, создаётся новый файл. Старые файлы сохраняются с номерами.
+
+**Зачем нужна ротация?**
+- Лог-файлы могут разрастись до гигабайтов
+- Удобно хранить логи за разные периоды
+- Не занимает всё место на диске
+
+```python
+import logging
+from logging.handlers import RotatingFileHandler
+
+logger = logging.getLogger('rotating_logger')
+logger.setLevel(logging.DEBUG)
+
+# Ротация: максимум 1 МБ на файл, хранить 5 файлов
+rotating_handler = RotatingFileHandler(
+    'app.log',
+    maxBytes=1_000_000,  # 1 МБ
+    backupCount=5,        # Хранить 5 старых файлов
+    encoding='utf-8'
+)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+rotating_handler.setFormatter(formatter)
+
+logger.addHandler(rotating_handler)
+
+# Логируем
+for i in range(1000):
+    logger.info(f"Сообщение номер {i}")
+```
+
+**Структура файлов после ротации:**
+```
+app.log         ← текущий файл
+app.log.1       ← предыдущий файл
+app.log.2       ← ещё более старый
+app.log.3
+app.log.4
+app.log.5       ← самый старый файл
+```
+
+Когда `app.log` заполнится, он станет `app.log.1`, а новый пустой `app.log` начнёт принимать логи.
+
+
+### Примеры комбинирования Handler'ов
+
+#### Пример 1: Одновременно в консоль и файл
+
+```python
+import logging
+
+# Создаём логгер
+logger = logging.getLogger('dual_logger')
+logger.setLevel(logging.DEBUG)
+
+# Handler для консоли (только WARNING и выше)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.WARNING)
+console_format = logging.Formatter('%(levelname)s: %(message)s')
+console_handler.setFormatter(console_format)
+
+# Handler для файла (всё, включая DEBUG)
+file_handler = logging.FileHandler('full.log', encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+file_format = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+file_handler.setFormatter(file_format)
+
+# Добавляем оба handler'а
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+# Тестируем
+logger.debug("Детальная отладка")
+logger.info("Информационное сообщение")
+logger.warning("Предупреждение!")
+logger.error("Ошибка!")
+```
+
+**Вывод в консоль:**
+```
+WARNING: Предупреждение!
+ERROR: Ошибка!
+```
+
+**Содержимое `full.log`:**
+```
+2025-10-15 16:45:00,123 | DEBUG | Детальная отладка
+2025-10-15 16:45:00,124 | INFO | Информационное сообщение
+2025-10-15 16:45:00,125 | WARNING | Предупреждение!
+2025-10-15 16:45:00,126 | ERROR | Ошибка!
+```
+
+
+#### Пример 2: Разные файлы для разных уровней
+
+```python
+import logging
+
+logger = logging.getLogger('split_logger')
+logger.setLevel(logging.DEBUG)
+
+# Все логи в general.log
+all_handler = logging.FileHandler('general.log', encoding='utf-8')
+all_handler.setLevel(logging.DEBUG)
+
+# Только ошибки в errors.log
+error_handler = logging.FileHandler('errors.log', encoding='utf-8')
+error_handler.setLevel(logging.ERROR)
+
+# Форматтер
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+all_handler.setFormatter(formatter)
+error_handler.setFormatter(formatter)
+
+# Добавляем оба handler'а
+logger.addHandler(all_handler)
+logger.addHandler(error_handler)
+
+# Тестируем
+logger.debug("Отладка")
+logger.info("Информация")
+logger.warning("Предупреждение")
+logger.error("Ошибка!")
+logger.critical("Критическая ошибка!")
+```
+
+**Содержимое `general.log`** (все сообщения):
+```
+2025-10-15 17:00:00,123 - DEBUG - Отладка
+2025-10-15 17:00:00,124 - INFO - Информация
+2025-10-15 17:00:00,125 - WARNING - Предупреждение
+2025-10-15 17:00:00,126 - ERROR - Ошибка!
+2025-10-15 17:00:00,127 - CRITICAL - Критическая ошибка!
+```
+
+**Содержимое `errors.log`** (только ERROR и CRITICAL):
+```
+2025-10-15 17:00:00,126 - ERROR - Ошибка!
+2025-10-15 17:00:00,127 - CRITICAL - Критическая ошибка!
+```
+
+
+#### Пример 3: Полноценная настройка для веб-приложения
+
+```python
+import logging
+from logging.handlers import RotatingFileHandler
+import sys
+
+def setup_logging():
+    """
+    Настройка логирования для веб-приложения:
+    - DEBUG и INFO → app.log (с ротацией)
+    - WARNING и выше → консоль
+    - ERROR и CRITICAL → errors.log (с ротацией)
+    """
+    
+    # Корневой логгер
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    
+    # Форматтеры
+    detailed_format = logging.Formatter(
+        '%(asctime)s | %(name)-20s | %(levelname)-8s | %(filename)s:%(lineno)d | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    simple_format = logging.Formatter('%(levelname)s: %(message)s')
+    
+    # 1. Handler для полных логов (app.log)
+    app_handler = RotatingFileHandler(
+        'app.log',
+        maxBytes=10_000_000,  # 10 МБ
+        backupCount=5,
+        encoding='utf-8'
+    )
+    app_handler.setLevel(logging.DEBUG)
+    app_handler.setFormatter(detailed_format)
+    
+    # 2. Handler для консоли (только WARNING и выше)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.WARNING)
+    console_handler.setFormatter(simple_format)
+    
+    # 3. Handler для ошибок (errors.log)
+    error_handler = RotatingFileHandler(
+        'errors.log',
+        maxBytes=5_000_000,  # 5 МБ
+        backupCount=3,
+        encoding='utf-8'
+    )
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(detailed_format)
+    
+    # Добавляем все handler'ы
+    root_logger.addHandler(app_handler)
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(error_handler)
+    
+    logging.info("Логирование настроено успешно")
+
+# Использование в приложении
+if __name__ == "__main__":
+    setup_logging()
+    
+    logger = logging.getLogger(__name__)
+    
+    logger.debug("Приложение запускается...")
+    logger.info("Сервер запущен на порту 8000")
+    logger.warning("Высокая нагрузка: 80% CPU")
+    logger.error("Не удалось подключиться к базе данных")
+    logger.critical("Система перегружена, требуется перезагрузка!")
+```
+
+**Что произойдёт:**
+
+**Консоль** (только WARNING и выше):
+```
+WARNING: Высокая нагрузка: 80% CPU
+ERROR: Не удалось подключиться к базе данных
+CRITICAL: Система перегружена, требуется перезагрузка!
+```
+
+**Файл `app.log`** (всё):
+```
+2025-10-15 17:15:00 | __main__             | INFO     | script.py:45 | Логирование настроено успешно
+2025-10-15 17:15:00 | __main__             | DEBUG    | script.py:51 | Приложение запускается...
+2025-10-15 17:15:00 | __main__             | INFO     | script.py:52 | Сервер запущен на порту 8000
+2025-10-15 17:15:00 | __main__             | WARNING  | script.py:53 | Высокая нагрузка: 80% CPU
+2025-10-15 17:15:00 | __main__             | ERROR    | script.py:54 | Не удалось подключиться к базе данных
+2025-10-15 17:15:00 | __main__             | CRITICAL | script.py:55 | Система перегружена, требуется перезагрузка!
+```
+
+**Файл `errors.log`** (только ERROR и CRITICAL):
+```
+2025-10-15 17:15:00 | __main__             | ERROR    | script.py:54 | Не удалось подключиться к базе данных
+2025-10-15 17:15:00 | __main__             | CRITICAL | script.py:55 | Система перегружена, требуется перезагрузка!
+```
+
+
+### Важные детали работы с Handler'ами
+
+#### 1. Уровни логирования работают каскадно
+
+```python
+logger.setLevel(logging.DEBUG)    # Логгер пропускает DEBUG и выше
+handler.setLevel(logging.WARNING) # Handler пропускает только WARNING и выше
+```
+
+Сообщение должно пройти **оба фильтра**: сначала логгер, потом handler.
+
+
+#### 2. Избегаем дублирования логов
+
+```python
+import logging
+
+# Проблема: если не очистить handler'ы, они будут дублироваться
+logger = logging.getLogger('my_logger')
+
+def setup_logging():
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)  # При повторном вызове добавится ещё один!
+
+# Решение 1: Проверять наличие handler'ов
+def setup_logging_safe():
+    if not logger.handlers:  # Если handler'ов нет
+        handler = logging.StreamHandler()
+        logger.addHandler(handler)
+
+# Решение 2: Очищать перед добавлением
+def setup_logging_clear():
+    logger.handlers.clear()  # Удаляем все старые handler'ы
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+```
+
+
+#### 3. Отключение распространения логов (propagate)
+
+По умолчанию логи передаются родительским логгерам. Иногда это нужно отключить:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
+# Создаём дочерний логгер
+child_logger = logging.getLogger('parent.child')
+child_logger.setLevel(logging.DEBUG)
+
+# Добавляем свой handler
+handler = logging.FileHandler('child.log')
+child_logger.addHandler(handler)
+
+# Отключаем передачу логов родителю
+child_logger.propagate = False  # Логи НЕ пойдут в basicConfig
+
+child_logger.info("Это будет только в child.log")
+```
+
+Без `propagate = False` логи попадут и в `child.log`, и в корневой логгер (консоль).
+
+
+### Другие полезные Handler'ы
+
+Python предоставляет много встроенных handler'ов:
+
+| Handler | Назначение |
+|---------|------------|
+| `StreamHandler` | Вывод в консоль (stdout/stderr) |
+| `FileHandler` | Запись в файл |
+| `RotatingFileHandler` | Ротация по размеру |
+| `TimedRotatingFileHandler` | Ротация по времени |
+| `SMTPHandler` | Отправка логов по email |
+| `HTTPHandler` | Отправка логов по HTTP |
+| `SysLogHandler` | Отправка в системный лог (Unix) |
+| `SocketHandler` | Отправка по сети (TCP) |
+| `QueueHandler` | Отправка в очередь (для многопоточности) |
+
+
+#### Пример 5: Реальная структура проекта
+
+```
+my_project/
+├── main.py
+├── config/
+│   └── logging_config.py
+├── modules/
+│   ├── database.py
+│   └── api.py
+└── logs/
+    ├── app.log
+    ├── errors.log
+    └── debug.log
+```
+
+**Файл `config/logging_config.py`:**
+```python
+import logging
+from logging.handlers import RotatingFileHandler
+import os
+
+def setup_logging():
+    """Централизованная настройка логирования для всего проекта"""
+    
+    # Создаём папку для логов, если её нет
+    os.makedirs('logs', exist_ok=True)
+    
+    # Корневой логгер
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    
+    # Форматтер с максимальной информацией
+    detailed_formatter = logging.Formatter(
+        '[%(asctime)s] %(name)-25s | %(levelname)-8s | %(filename)s:%(lineno)d | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # Форматтер для консоли (проще)
+    console_formatter = logging.Formatter(
+        '%(levelname)s: %(message)s'
+    )
+    
+    # 1. Полные логи в app.log
+    app_handler = RotatingFileHandler(
+        'logs/app.log',
+        maxBytes=10_000_000,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    app_handler.setLevel(logging.INFO)
+    app_handler.setFormatter(detailed_formatter)
+    
+    # 2. Отладочные логи в debug.log
+    debug_handler = RotatingFileHandler(
+        'logs/debug.log',
+        maxBytes=5_000_000,
+        backupCount=3,
+        encoding='utf-8'
+    )
+    debug_handler.setLevel(logging.DEBUG)
+    debug_handler.setFormatter(detailed_formatter)
+    
+    # 3. Только ошибки в errors.log
+    error_handler = RotatingFileHandler(
+        'logs/errors.log',
+        maxBytes=5_000_000,
+        backupCount=5,
+        encoding='utf-8'
+    )
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(detailed_formatter)
+    
+    # 4. Консоль (только WARNING и выше)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.WARNING)
+    console_handler.setFormatter(console_formatter)
+    
+    # Добавляем все handler'ы
+    root_logger.addHandler(app_handler)
+    root_logger.addHandler(debug_handler)
+    root_logger.addHandler(error_handler)
+    root_logger.addHandler(console_handler)
+    
+    # Логируем факт успешной настройки
+    logging.info("=" * 50)
+    logging.info("Система логирования инициализирована")
+    logging.info("=" * 50)
+```
+
+**Файл `modules/database.py`:**
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def connect():
+    logger.debug("Инициализация подключения к БД")
+    logger.info("Подключено к PostgreSQL на localhost:5432")
+
+def query(sql):
+    logger.debug(f"Выполняется запрос: {sql}")
+    if "DROP" in sql.upper():
+        logger.critical(f"ОПАСНЫЙ ЗАПРОС: {sql}")
+        raise ValueError("Опасная операция запрещена")
+    logger.info("Запрос выполнен успешно")
+```
+
+**Файл `modules/api.py`:**
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+def handle_request(endpoint, user_id):
+    logger.info(f"Запрос к {endpoint} от пользователя {user_id}")
+    
+    if user_id is None:
+        logger.warning(f"Неавторизованный доступ к {endpoint}")
+        return {"error": "Unauthorized"}
+    
+    logger.debug(f"Обработка данных для пользователя {user_id}")
+    return {"status": "ok"}
+```
+
+**Файл `main.py`:**
+```python
+from config.logging_config import setup_logging
+from modules import database, api
+import logging
+
+# Настраиваем логирование один раз в начале
+setup_logging()
+
+# Создаём логгер для main модуля
+logger = logging.getLogger(__name__)
+
+def main():
+    logger.info("Запуск приложения")
+    
+    try:
+        # Работа с базой данных
+        database.connect()
+        database.query("SELECT * FROM users")
+        
+        # Обработка API запросов
+        api.handle_request("/api/users", 123)
+        api.handle_request("/api/admin", None)
+        
+        logger.info("Приложение работает корректно")
+        
+    except Exception as e:
+        logger.exception("Критическая ошибка в приложении")
+        raise
+    
+    finally:
+        logger.info("Завершение работы приложения")
+
+if __name__ == "__main__":
+    main()
+```
+
+**Что получится:**
+
+**Консоль** (только WARNING и выше):
+```
+WARNING: Неавторизованный доступ к /api/admin
+```
+
+**Файл `logs/app.log`** (INFO и выше):
+```
+[2025-10-15 18:00:00] config.logging_config    | INFO     | logging_config.py:57 | ==================================================
+[2025-10-15 18:00:00] config.logging_config    | INFO     | logging_config.py:58 | Система логирования инициализирована
+[2025-10-15 18:00:00] config.logging_config    | INFO     | logging_config.py:59 | ==================================================
+[2025-10-15 18:00:00] __main__                 | INFO     | main.py:12 | Запуск приложения
+[2025-10-15 18:00:00] modules.database         | INFO     | database.py:7 | Подключено к PostgreSQL на localhost:5432
+[2025-10-15 18:00:00] modules.database         | INFO     | database.py:14 | Запрос выполнен успешно
+[2025-10-15 18:00:00] modules.api              | INFO     | api.py:6 | Запрос к /api/users от пользователя 123
+[2025-10-15 18:00:00] modules.api              | INFO     | api.py:6 | Запрос к /api/admin от пользователя None
+[2025-10-15 18:00:00] modules.api              | WARNING  | api.py:9 | Неавторизованный доступ к /api/admin
+[2025-10-15 18:00:00] __main__                 | INFO     | main.py:23 | Приложение работает корректно
+[2025-10-15 18:00:00] __main__                 | INFO     | main.py:29 | Завершение работы приложения
+```
+
+**Файл `logs/debug.log`** (всё, включая DEBUG):
+```
+[2025-10-15 18:00:00] modules.database         | DEBUG    | database.py:5 | Инициализация подключения к БД
+[2025-10-15 18:00:00] modules.database         | DEBUG    | database.py:10 | Выполняется запрос: SELECT * FROM users
+[2025-10-15 18:00:00] modules.api              | DEBUG    | api.py:12 | Обработка данных для пользователя 123
+...
+```
+
+**Файл `logs/errors.log`** (только ERROR и CRITICAL) — в данном примере пуст, т.к. ошибок не было.
+
+
+### Ключевые выводы
+
+1. **Handler определяет, КУДА идут логи** — в консоль, файл, по сети и т.д.
+2. **Один логгер может иметь множество handler'ов** — логи пойдут во все указанные места одновременно
+3. **StreamHandler** — для вывода в консоль (терминал)
+4. **FileHandler** — для записи в один файл
+5. **RotatingFileHandler** — автоматически создаёт новые файлы при достижении лимита размера
+6. **TimedRotatingFileHandler** — создаёт новые файлы по расписанию (каждый день, час и т.д.)
+7. **У handler'а есть свой уровень** — можно отправлять в консоль только ошибки, а в файл всё
+8. **Formatter определяет внешний вид** — что показывать: время, уровень, имя модуля и т.д.
+9. **В реальных проектах настройка логирования выносится в отдельный модуль** — чтобы все части приложения использовали единую конфигурацию
+
 ## `34.8` Formatter — форматирование сообщений и основные переменные
+**Formatter** определяет, **как** будут выглядеть сообщения в логах. Он превращает информацию о событии в читаемую строку с нужными деталями.
+
+#### Создание форматтера
+
+```python
+import logging
+
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+```
+
+### Основные переменные форматирования
+
+| Переменная | Описание | Пример |
+|------------|----------|---------|
+| `%(name)s` | Имя логгера | `app.database` |
+| `%(levelname)s` | Уровень логирования | `ERROR` |
+| `%(levelno)s` | Уровень в числовом виде | `40` |
+| `%(message)s` | Само сообщение | `Ошибка подключения` |
+| `%(asctime)s` | Время события | `2025-10-15 12:30:45` |
+| `%(filename)s` | Имя файла | `database.py` |
+| `%(funcName)s` | Имя функции | `connect_to_db` |
+| `%(lineno)d` | Номер строки | `42` |
+| `%(pathname)s` | Полный путь к файлу | `/home/user/app/database.py` |
+| `%(process)d` | ID процесса | `12345` |
+| `%(thread)d` | ID потока | `67890` |
+| `%(module)s` | Имя модуля | `database` |
+
+
+### Примеры форматирования
+
+#### Пример 1: Разные форматы для разных handler'ов
+
+```python
+import logging
+
+logger = logging.getLogger('my_app')
+logger.setLevel(logging.DEBUG)
+
+# Детальный формат для файла
+file_formatter = logging.Formatter(
+    '[%(asctime)s] %(name)s | %(levelname)-8s | %(filename)s:%(lineno)d | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Простой формат для консоли
+console_formatter = logging.Formatter(
+    '%(levelname)s: %(message)s'
+)
+
+# Handler для файла с детальным форматом
+file_handler = logging.FileHandler('detailed.log', encoding='utf-8')
+file_handler.setFormatter(file_formatter)
+
+# Handler для консоли с простым форматом
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(console_formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+logger.info("Тестовое сообщение")
+logger.error("Произошла ошибка")
+```
+
+**Консоль:**
+```
+INFO: Тестовое сообщение
+ERROR: Произошла ошибка
+```
+
+**Файл `detailed.log`:**
+```
+[2025-10-15 12:30:00] my_app | INFO     | script.py:25 | Тестовое сообщение
+[2025-10-15 12:30:00] my_app | ERROR    | script.py:26 | Произошла ошибка
+```
+
+
+#### Пример 2: Формат с выравниванием
+
+```python
+import logging
+
+# Выравнивание полей для красоты
+formatter = logging.Formatter(
+    '%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s',
+    datefmt='%H:%M:%S'
+)
+
+logger = logging.getLogger('app.module.submodule')
+logger.setLevel(logging.DEBUG)
+
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+logger.debug("Отладка")
+logger.info("Информация")
+logger.warning("Предупреждение")
+```
+
+**Вывод:**
+```
+12:30:00 | app.module.submodule | DEBUG    | Отладка
+12:30:00 | app.module.submodule | INFO     | Информация
+12:30:00 | app.module.submodule | WARNING  | Предупреждение
+```
+
+**Пояснение:**
+- `%(name)-20s` — имя логгера, выровненное влево на 20 символов
+- `%(levelname)-8s` — уровень, выровненный влево на 8 символов
+
+
+#### Пример 3: Формат для отладки (с функцией и строкой)
+
+```python
+import logging
+
+# Формат для поиска багов — показывает функцию и строку
+debug_formatter = logging.Formatter(
+    '%(levelname)s | %(module)s.%(funcName)s():%(lineno)d | %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+handler = logging.StreamHandler()
+handler.setFormatter(debug_formatter)
+logger.addHandler(handler)
+
+def calculate_sum(a, b):
+    logger.debug(f"Вычисляем сумму: {a} + {b}")
+    result = a + b
+    logger.info(f"Результат: {result}")
+    return result
+
+def divide(a, b):
+    logger.debug(f"Делим {a} на {b}")
+    if b == 0:
+        logger.error("Деление на ноль!")
+        return None
+    return a / b
+
+calculate_sum(10, 20)
+divide(10, 0)
+```
+
+**Вывод:**
+```
+DEBUG | script.calculate_sum():15 | Вычисляем сумму: 10 + 20
+INFO | script.calculate_sum():17 | Результат: 30
+DEBUG | script.divide():21 | Делим 10 на 0
+ERROR | script.divide():23 | Деление на ноль!
+```
+
+Сразу видно, в какой функции и на какой строке произошло событие!
+
+
+#### Пример 4: JSON формат для машинной обработки
+
+```python
+import logging
+import json
+from datetime import datetime
+
+class JsonFormatter(logging.Formatter):
+    """Кастомный форматтер для вывода в JSON"""
+    
+    def format(self, record):
+        log_data = {
+            'timestamp': datetime.fromtimestamp(record.created).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        return json.dumps(log_data, ensure_ascii=False)
+
+logger = logging.getLogger('json_app')
+logger.setLevel(logging.DEBUG)
+
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logger.addHandler(handler)
+
+logger.info("Приложение запущено")
+logger.error("Ошибка подключения")
+```
+
+**Вывод:**
+```json
+{"timestamp": "2025-10-15T12:30:00.123456", "level": "INFO", "logger": "json_app", "message": "Приложение запущено", "module": "script", "function": "<module>", "line": 25}
+{"timestamp": "2025-10-15T12:30:00.234567", "level": "ERROR", "logger": "json_app", "message": "Ошибка подключения", "module": "script", "function": "<module>", "line": 26}
+```
+
+Такой формат удобен для автоматической обработки логов специальными инструментами (ELK Stack, Grafana и т.д.).
+
+
+### Форматирование даты и времени
+
+Параметр `datefmt` использует те же коды, что и `strftime()`:
+
+| Код | Значение | Пример |
+|-----|----------|--------|
+| `%Y` | Год (4 цифры) | `2025` |
+| `%m` | Месяц (2 цифры) | `10` |
+| `%d` | День | `15` |
+| `%H` | Час (24ч) | `14` |
+| `%M` | Минута | `30` |
+| `%S` | Секунда | `45` |
+| `%b` | Месяц (сокращённо) | `Oct` |
+| `%B` | Месяц (полностью) | `October` |
+| `%A` | День недели | `Wednesday` |
+
+```python
+import logging
+
+# Различные форматы времени
+formats = [
+    '%Y-%m-%d %H:%M:%S',           # 2025-10-15 14:30:45
+    '%d.%m.%Y %H:%M',              # 15.10.2025 14:30
+    '%H:%M:%S',                    # 14:30:45
+    '%Y-%m-%dT%H:%M:%S',           # 2025-10-15T14:30:45 (ISO)
+    '%A, %d %B %Y %H:%M:%S'        # Wednesday, 15 October 2025 14:30:45
+]
+
+for fmt in formats:
+    formatter = logging.Formatter('%(asctime)s | %(message)s', datefmt=fmt)
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    
+    logger = logging.getLogger(f'test_{formats.index(fmt)}')
+    logger.addHandler(handler)
+    logger.info("Пример формата времени")
+    logger.handlers.clear()
+```
+
 ## `34.9` Настройка уровней логирования для logger и handler
+Уровни логирования работают **каскадно**: сообщение должно пройти проверку и у логгера, и у handler'а.
+
+```
+Сообщение → Logger (проверка уровня) → Handler (проверка уровня) → Вывод
+```
+
+Если сообщение не проходит хотя бы один фильтр — оно не выводится.
+
+### Настройка уровня логгера
+
+```python
+import logging
+
+logger = logging.getLogger('my_logger')
+
+# Устанавливаем минимальный уровень
+logger.setLevel(logging.WARNING)  # Пропускать только WARNING и выше
+
+logger.debug("Это не пройдёт")
+logger.info("Это тоже не пройдёт")
+logger.warning("Это пройдёт")
+logger.error("Это тоже пройдёт")
+```
+
+### Настройка уровня handler'а
+
+```python
+import logging
+
+logger = logging.getLogger('test')
+logger.setLevel(logging.DEBUG)  # Логгер пропускает всё
+
+# Handler #1: только ERROR и выше
+error_handler = logging.FileHandler('errors.log')
+error_handler.setLevel(logging.ERROR)
+
+# Handler #2: всё, начиная с DEBUG
+all_handler = logging.FileHandler('all.log')
+all_handler.setLevel(logging.DEBUG)
+
+logger.addHandler(error_handler)
+logger.addHandler(all_handler)
+
+logger.debug("Пойдёт только в all.log")
+logger.info("Пойдёт только в all.log")
+logger.error("Пойдёт в ОБА файла")
+```
+
+### Примеры комбинаций
+
+#### Пример 1: Разные уровни для разных модулей
+
+```python
+import logging
+
+logging.basicConfig(level=logging.WARNING)  # По умолчанию WARNING
+
+# Для модуля database хотим видеть всё
+db_logger = logging.getLogger('database')
+db_logger.setLevel(logging.DEBUG)
+
+# Для модуля api достаточно INFO
+api_logger = logging.getLogger('api')
+api_logger.setLevel(logging.INFO)
+
+# Для модуля cache оставляем WARNING (по умолчанию)
+cache_logger = logging.getLogger('cache')
+
+db_logger.debug("SQL: SELECT * FROM users")     # ✓ Покажется
+api_logger.debug("Parsing request data")        # ✗ Не покажется
+api_logger.info("Request received")             # ✓ Покажется
+cache_logger.info("Cache updated")              # ✗ Не покажется
+cache_logger.warning("Cache almost full")       # ✓ Покажется
+```
+
+
+#### Пример 2: Динамическое изменение уровня
+
+```python
+import logging
+
+logger = logging.getLogger('dynamic')
+handler = logging.StreamHandler()
+logger.addHandler(handler)
+
+# Режим отладки
+logger.setLevel(logging.DEBUG)
+logger.debug("Отладочная информация")
+logger.info("Обычная информация")
+
+print("\n--- Переключаемся в production режим ---\n")
+
+# Production режим — только ошибки
+logger.setLevel(logging.ERROR)
+logger.debug("Это не покажется")
+logger.info("Это тоже не покажется")
+logger.error("А это покажется")
+```
+
+**Вывод:**
+```
+Отладочная информация
+Обычная информация
+
+--- Переключаемся в production режим ---
+
+А это покажется
+```
+
+
+#### Пример 3: Практический сценарий
+
+```python
+import logging
+import os
+
+# Читаем режим работы из переменной окружения
+DEBUG_MODE = os.getenv('DEBUG', 'False') == 'True'
+
+# Настройка в зависимости от режима
+if DEBUG_MODE:
+    log_level = logging.DEBUG
+    print("Режим: РАЗРАБОТКА (DEBUG)")
+else:
+    log_level = logging.WARNING
+    print("Режим: PRODUCTION (WARNING)")
+
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s | %(name)-15s | %(levelname)-8s | %(message)s',
+    datefmt='%H:%M:%S'
+)
+
+logger = logging.getLogger('app')
+
+logger.debug("Детальная отладочная информация")
+logger.info("Приложение запущено")
+logger.warning("Высокая нагрузка")
+logger.error("Критическая ошибка")
+```
+
+**В режиме разработки:**
+```
+Режим: РАЗРАБОТКА (DEBUG)
+12:30:00 | app             | DEBUG    | Детальная отладочная информация
+12:30:00 | app             | INFO     | Приложение запущено
+12:30:00 | app             | WARNING  | Высокая нагрузка
+12:30:00 | app             | ERROR    | Критическая ошибка
+```
+
+**В production:**
+```
+Режим: PRODUCTION (WARNING)
+12:30:00 | app             | WARNING  | Высокая нагрузка
+12:30:00 | app             | ERROR    | Критическая ошибка
+```
+
+
+### Ключевые выводы
+
+**Formatter:**
+- Определяет **внешний вид** логов
+- Использует переменные типа `%(name)s`, `%(levelname)s`, `%(message)s`
+- Можно создавать разные форматы для консоли и файлов
+- Поддерживает кастомные форматтеры (например, JSON)
+
+**Уровни логирования:**
+- Настраиваются **отдельно** для logger и handler
+- Сообщение должно пройти **оба фильтра**
+- Можно менять уровни **динамически** во время работы программы
+- В разработке обычно `DEBUG`, в production — `INFO` или `WARNING`
+
 ## `34.10` Логирование исключений — `logger.exception()` и `exc_info=True`
+Когда в программе происходит ошибка, важно знать не только сам факт ошибки, но и **полный traceback** — цепочку вызовов функций, которая привела к проблеме.
+
+### `logger.exception()` — автоматический traceback
+
+**`logger.exception()`** — специальный метод, который автоматически добавляет полную информацию об исключении, включая traceback.
+
+```python
+import logging
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
+def divide(a, b):
+    try:
+        result = a / b
+        return result
+    except ZeroDivisionError:
+        logger.exception("Ошибка при делении")
+        return None
+
+divide(10, 0)
+```
+
+**Вывод:**
+```
+ERROR:__main__:Ошибка при делении
+Traceback (most recent call last):
+  File "script.py", line 8, in divide
+    result = a / b
+ZeroDivisionError: division by zero
+```
+
+**Важно:** `logger.exception()` всегда логирует на уровне **ERROR** и должен вызываться **только внутри блока `except`**.
+
+### `exc_info=True` — traceback для любого уровня
+
+Если нужен traceback на другом уровне (не ERROR), используй параметр `exc_info=True`:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger(__name__)
+
+def risky_operation():
+    try:
+        x = 1 / 0
+    except ZeroDivisionError:
+        logger.warning("Что-то пошло не так", exc_info=True)
+
+risky_operation()
+```
+
+**Вывод:**
+```
+WARNING:__main__:Что-то пошло не так
+Traceback (most recent call last):
+  File "script.py", line 7, in risky_operation
+    x = 1 / 0
+ZeroDivisionError: division by zero
+```
+
+### Примеры
+
+#### Пример 1: Веб-сервер с логированием ошибок
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+def process_request(data):
+    try:
+        # Имитация обработки
+        result = int(data['value']) * 2
+        logger.info(f"Запрос обработан успешно: {result}")
+        return result
+    except KeyError:
+        logger.exception("Отсутствует обязательное поле 'value'")
+        return None
+    except ValueError:
+        logger.exception("Некорректное значение поля 'value'")
+        return None
+    except Exception:
+        logger.exception("Неожиданная ошибка при обработке запроса")
+        return None
+
+# Тесты
+process_request({'value': '10'})      # ✓ Успешно
+process_request({'name': 'test'})     # KeyError
+process_request({'value': 'abc'})     # ValueError
+```
+
+**Вывод:**
+```
+2025-10-15 14:30:00 | INFO | Запрос обработан успешно: 20
+2025-10-15 14:30:00 | ERROR | Отсутствует обязательное поле 'value'
+Traceback (most recent call last):
+  File "script.py", line 13, in process_request
+    result = int(data['value']) * 2
+KeyError: 'value'
+2025-10-15 14:30:00 | ERROR | Некорректное значение поля 'value'
+Traceback (most recent call last):
+  File "script.py", line 13, in process_request
+    result = int(data['value']) * 2
+ValueError: invalid literal for int() with base 10: 'abc'
+```
+
+
+#### Пример 2: Различия между методами
+
+```python
+import logging
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
+def test_methods():
+    try:
+        x = 1 / 0
+    except ZeroDivisionError:
+        # Метод 1: logger.error() — только сообщение
+        logger.error("Произошла ошибка")
+        
+        # Метод 2: logger.error() с exc_info=True — сообщение + traceback
+        logger.error("Произошла ошибка", exc_info=True)
+        
+        # Метод 3: logger.exception() — сокращённая запись метода 2
+        logger.exception("Произошла ошибка")
+
+test_methods()
+```
+
+**Вывод:**
+```
+ERROR:__main__:Произошла ошибка
+
+ERROR:__main__:Произошла ошибка
+Traceback (most recent call last):
+  File "script.py", line 9, in test_methods
+    x = 1 / 0
+ZeroDivisionError: division by zero
+
+ERROR:__main__:Произошла ошибка
+Traceback (most recent call last):
+  File "script.py", line 9, in test_methods
+    x = 1 / 0
+ZeroDivisionError: division by zero
+```
+
+
+#### Пример 3: Логирование в файл с отдельным обработчиком исключений
+
+```python
+import logging
+
+# Настройка: обычные логи в app.log, исключения в errors.log
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(message)s',
+    handlers=[
+        logging.FileHandler('app.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+
+# Отдельный handler для исключений
+error_handler = logging.FileHandler('errors.log', encoding='utf-8')
+error_handler.setLevel(logging.ERROR)
+error_formatter = logging.Formatter(
+    '%(asctime)s | %(name)s | %(levelname)s | %(message)s\n%(exc_info)s'
+)
+error_handler.setFormatter(error_formatter)
+
+logger = logging.getLogger(__name__)
+logger.addHandler(error_handler)
+
+def buggy_function(items):
+    logger.info(f"Обрабатываем {len(items)} элементов")
+    try:
+        for i, item in enumerate(items):
+            result = 100 / item
+            logger.debug(f"Элемент {i}: {result}")
+    except ZeroDivisionError:
+        logger.exception(f"Ошибка на элементе {i}")
+    except Exception as e:
+        logger.exception(f"Неожиданная ошибка: {type(e).__name__}")
+
+buggy_function([5, 10, 0, 15])
+```
+
+**Файл `app.log`:**
+```
+2025-10-15 14:45:00 | INFO | Обрабатываем 4 элементов
+2025-10-15 14:45:00 | ERROR | Ошибка на элементе 2
+```
+
+**Файл `errors.log`** (с полным traceback):
+```
+2025-10-15 14:45:00 | __main__ | ERROR | Ошибка на элементе 2
+Traceback (most recent call last):
+  File "script.py", line 28, in buggy_function
+    result = 100 / item
+ZeroDivisionError: division by zero
+```
+
+
+### Ключевые моменты
+
+- **`logger.exception()`** — используй **только** в блоке `except`, автоматически добавляет traceback на уровне ERROR
+- **`exc_info=True`** — можно использовать с любым уровнем логирования для добавления traceback
+- Логирование исключений **критически важно** для диагностики проблем в production
+- Всегда логируй исключения в блоках `except`, чтобы не потерять информацию об ошибке
+
+
 ## `34.11` Конфигурация через словарь — `logging.config.dictConfig()`
+Когда проект растёт, настройка логирования через код становится громоздкой. **`dictConfig()`** позволяет описать всю конфигурацию в виде словаря (или загрузить из JSON/YAML файла).
+
+**Преимущества:**
+- Вся настройка в одном месте
+- Легко читать и изменять
+- Можно хранить в отдельном файле
+- Легко переключаться между конфигурациями (dev/production)
+
+
+### Базовая структура словаря конфигурации
+
+```python
+import logging
+import logging.config
+
+config = {
+    'version': 1,  # Версия схемы (всегда 1)
+    'disable_existing_loggers': False,  # Не отключать существующие логгеры
+    
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s - %(message)s'
+        },
+        'detailed': {
+            'format': '%(asctime)s | %(name)s | %(levelname)s | %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        }
+    },
+    
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'WARNING',
+            'formatter': 'simple',
+            'stream': 'ext://sys.stdout'
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'level': 'DEBUG',
+            'formatter': 'detailed',
+            'filename': 'app.log',
+            'encoding': 'utf-8'
+        }
+    },
+    
+    'loggers': {
+        'my_app': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file'],
+            'propagate': False
+        }
+    },
+    
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console']
+    }
+}
+
+# Применяем конфигурацию
+logging.config.dictConfig(config)
+
+# Используем
+logger = logging.getLogger('my_app')
+logger.debug("Отладка")
+logger.info("Информация")
+logger.warning("Предупреждение")
+logger.error("Ошибка")
+```
+
+
+### Примеры
+
+#### Пример 1: Простая конфигурация
+
+```python
+import logging.config
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(name)s - %(levelname)s - %(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+            'level': 'INFO'
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['console']
+    }
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
+
+logger = logging.getLogger(__name__)
+logger.debug("Не покажется (уровень handler - INFO)")
+logger.info("Покажется")
+logger.error("Покажется")
+```
+
+
+#### Пример 2: Продвинутая конфигурация с ротацией
+
+```python
+import logging.config
+
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s | %(name)-25s | %(levelname)-8s | %(filename)s:%(lineno)d | %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+        'simple': {
+            'format': '%(levelname)s: %(message)s'
+        }
+    },
+    
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'WARNING',
+            'formatter': 'simple'
+        },
+        'file_all': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'INFO',
+            'formatter': 'verbose',
+            'filename': 'logs/app.log',
+            'maxBytes': 10485760,  # 10 МБ
+            'backupCount': 5,
+            'encoding': 'utf-8'
+        },
+        'file_errors': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'ERROR',
+            'formatter': 'verbose',
+            'filename': 'logs/errors.log',
+            'maxBytes': 5242880,  # 5 МБ
+            'backupCount': 3,
+            'encoding': 'utf-8'
+        }
+    },
+    
+    'loggers': {
+        'app.database': {
+            'level': 'DEBUG',
+            'handlers': ['file_all'],
+            'propagate': False
+        },
+        'app.api': {
+            'level': 'INFO',
+            'handlers': ['console', 'file_all', 'file_errors'],
+            'propagate': False
+        }
+    },
+    
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console', 'file_all', 'file_errors']
+    }
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
+
+# Используем различные логгеры
+db_logger = logging.getLogger('app.database')
+api_logger = logging.getLogger('app.api')
+root_logger = logging.getLogger()
+
+db_logger.debug("Выполнен SQL запрос")
+api_logger.info("API запрос обработан")
+api_logger.error("Ошибка API")
+root_logger.warning("Общее предупреждение")
+```
+
+
+#### Пример 3: Загрузка конфигурации из JSON файла
+
+**Файл `logging_config.json`:**
+```json
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "standard": {
+      "format": "%(asctime)s | %(name)s | %(levelname)s | %(message)s",
+      "datefmt": "%Y-%m-%d %H:%M:%S"
+    }
+  },
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "INFO",
+      "formatter": "standard"
+    },
+    "file": {
+      "class": "logging.FileHandler",
+      "level": "DEBUG",
+      "formatter": "standard",
+      "filename": "app.log",
+      "encoding": "utf-8"
+    }
+  },
+  "root": {
+    "level": "DEBUG",
+    "handlers": ["console", "file"]
+  }
+}
+```
+
+**Python код:**
+```python
+import logging.config
+import json
+
+# Загружаем конфигурацию из файла
+with open('logging_config.json', 'r', encoding='utf-8') as f:
+    config = json.load(f)
+
+logging.config.dictConfig(config)
+
+logger = logging.getLogger(__name__)
+logger.debug("Конфигурация загружена из JSON")
+logger.info("Приложение запущено")
+logger.error("Тестовая ошибка")
+```
+
+
+#### Пример 4: Разные конфигурации для dev и production
+
+```python
+import logging.config
+import os
+
+def get_logging_config():
+    """Возвращает конфигурацию в зависимости от окружения"""
+    
+    is_production = os.getenv('ENV') == 'production'
+    
+    if is_production:
+        return {
+            'version': 1,
+            'formatters': {
+                'production': {
+                    'format': '%(asctime)s | %(levelname)s | %(message)s'
+                }
+            },
+            'handlers': {
+                'file': {
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'formatter': 'production',
+                    'filename': '/var/log/app/production.log',
+                    'maxBytes': 20971520,  # 20 МБ
+                    'backupCount': 10,
+                    'encoding': 'utf-8'
+                }
+            },
+            'root': {
+                'level': 'WARNING',  # В production только WARNING и выше
+                'handlers': ['file']
+            }
+        }
+    else:
+        return {
+            'version': 1,
+            'formatters': {
+                'dev': {
+                    'format': '%(name)s | %(levelname)s | %(message)s'
+                }
+            },
+            'handlers': {
+                'console': {
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'dev'
+                }
+            },
+            'root': {
+                'level': 'DEBUG',  # В dev показываем всё
+                'handlers': ['console']
+            }
+        }
+
+# Применяем соответствующую конфигурацию
+logging.config.dictConfig(get_logging_config())
+
+logger = logging.getLogger(__name__)
+logger.debug("Отладочное сообщение")
+logger.info("Информационное сообщение")
+logger.warning("Предупреждение")
+```
+
+
+### Ключевые элементы словаря
+
+| Ключ | Описание |
+|------|----------|
+| `version` | Версия схемы (всегда `1`) |
+| `formatters` | Определение форматтеров |
+| `handlers` | Определение обработчиков (куда писать) |
+| `loggers` | Настройка конкретных логгеров |
+| `root` | Настройка корневого логгера |
+| `disable_existing_loggers` | `False` — не отключать существующие логгеры |
+
+
+### Ключевые выводы
+
+**Логирование исключений:**
+- `logger.exception()` — в блоке `except` для автоматического traceback
+- `exc_info=True` — для traceback на любом уровне
+- Всегда логируй исключения для диагностики проблем
+
+**Конфигурация через словарь:**
+- Вся настройка в одном месте
+- Легко переключаться между окружениями (dev/prod)
+- Можно хранить в JSON/YAML файлах
+- Более читаемо и поддерживаемо для больших проектов
 
 ----
 
