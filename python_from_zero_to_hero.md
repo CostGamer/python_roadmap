@@ -45635,4 +45635,3 @@ print("✓ Тест пройден")
 [DI в Python & Популярных фреймворках](https://snyk.io/blog/dependency-injection-python/)
 
 ----
-
